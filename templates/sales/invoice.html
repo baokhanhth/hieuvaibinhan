@@ -1,0 +1,116 @@
+{% load static %}
+{% load money %}
+
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+
+    <meta charset="UTF-8">
+    <title>Hóa đơn</title>
+    <link rel="stylesheet" href="{% static 'css/invoice.css' %}">
+    <link rel="icon" type="image/jpeg" href="{% static 'img/Logo.jpg' %}">
+
+</head>
+
+<body>
+    <div class="invoice">
+        <div class="shop-header">
+            <img src="{% static 'img/Logo.jpg' %}" alt="Logo cửa hàng" class="shop-logo">
+        </div>
+        <hr>
+        <div class="invoice-info">
+
+            <div class="info-row">
+                <span class="label">Mã hóa đơn</span>
+                <span class="value">{{ order.order_code }}</span>
+            </div>
+
+            <div class="info-row">
+                <span class="label">Ngày</span>
+                <span class="value">{{ order.created_at|date:"d/m/Y H:i:s" }}</span>
+            </div>
+
+            <div class="info-row">
+                <span class="label">Nhân viên</span>
+                <span class="value">{{ order.employee.full_name }}</span>
+            </div>
+
+            <div class="info-row">
+                <span class="label">Khách hàng</span>
+                <span class="value">Khách lẻ</span>
+            </div>
+
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Mặt hàng</th>
+                    <th class="center">Số lượng (m)</th>
+                    <th class="right">Đơn giá</th>
+                    <th class="right">T.Tiền</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for item in order.items.all %}
+                <tr>
+
+                    <td>{{ item.product.name }}</td>
+
+                    <td class="center">
+                        {{ item.quantity|floatformat:2 }}
+                    </td>
+
+                    <td class="right">
+                        {{ item.unit_price|money }}
+                    </td>
+
+                    <td class="right">
+                        {{ item.subtotal |money}}
+                    </td>
+
+                </tr>
+                {% endfor %}
+            </tbody>
+
+            <tfoot>
+                <tr>
+                    <td colspan="3" class="summary-label-cell">
+                        <strong>Tổng tiền hàng</strong>
+                    </td>
+                    <td class="right summary-value-cell">
+                        <strong>{{ order.total_amount|default:order.final_amount|money }}</strong>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="3" class="summary-label-cell">
+                        Giảm giá
+                    </td>
+                    <td class="right summary-value-cell">
+                        {% if order.discount and order.discount != 0 %}-{{ order.discount|money }}{% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="3" class="summary-label-cell">
+                        Tiền cần thanh toán
+                    </td>
+                    <td class="right summary-value-cell">
+                        {{ order.final_amount|money }}
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+        <p style="text-align:center; margin-top:15px;"> Xin cảm ơn quý khách!</p>
+        <button
+            type="button"
+            class="btn"
+            onclick="window.print()">
+            In hóa đơn
+        </button>
+    </div>
+</body>
+
+</html>

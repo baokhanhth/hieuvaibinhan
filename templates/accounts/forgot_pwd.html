@@ -1,0 +1,53 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Quên mật khẩu</title>
+
+    <link rel="stylesheet" href="{% static 'css/auth.css' %}">
+    <link rel="stylesheet" href="{% static 'css/forgot_password.css' %}">
+</head>
+
+<body>
+
+<div class="background">
+
+    <div class="auth-card">
+
+        <a class="back-link" href="{% url 'login' %}"><i class="fa-solid fa-arrow-left"></i> Quay lại</a>
+
+
+        <div class="logo">
+            <img src="{% static 'img/logo.jpg' %}" alt="Logo">
+        </div>
+
+        <h2 class="title" align="center">QUÊN MẬT KHẨU</h2>
+
+        <form method="POST">
+            {% csrf_token %}
+            <label for="{{ form.phone.id_for_label }}">
+                Số điện thoại
+            </label>
+
+            {{ form.phone }}
+
+            {% if form.phone.errors %}
+                <small class="error">
+                    {{ form.phone.errors.0 }}
+                </small>
+            {% endif %}
+
+            <button type="submit" class="auth-button">
+                Xác nhận
+            </button>
+        </form>
+
+    </div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}
+    Bán hàng
+{% endblock %}
+
+{% block nav_sales %}
+    active
+{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{% static 'css/homepage.css' %}">
+{% endblock %}
+
+{% block content %}
+    {% csrf_token %}
+    <input type="hidden" id="csrf-token" value="{{ csrf_token }}">
+
+    <div class="container">
+        <section class="left-panel">
+
+        <div class="search-wrapper">
+            <div class="search-bar">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text"
+                        id="search-product"
+                        placeholder="Nhập tên hoặc mã mặt hàng..."
+                        autocomplete="off">
+                </div>
+            <div id="search-result"
+                 class="search-result">
+            </div>
+        </div>
+
+            <div class="invoice-tabs">
+                <div class="tab active" id="invoice-tab">
+                    <span> Hóa đơn <span id="invoice-code">{{ order.order_code }} </span>
+                    </span>
+
+                    <button id="btn-close-invoice"
+                            class="close-tab"
+                            title="Hủy hóa đơn">
+                            <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <button class="new-tab"
+                        id="btn-new-invoice"
+                        title="Tạo hóa đơn mới">
+                        <i class="fa-solid fa-plus"></i>
+                </button>
+            </div>
+
+            <div class="product-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th width="35%">Mặt hàng</th>
+                            <th width="15%">Số lượng (mét)</th>
+                            <th width="20%">Đơn giá</th>
+                            <th width="20%"> Thành tiền</th>
+                            <th width="10%"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="order-items">
+                        <tr class="empty-row">
+                            <td
+                                colspan="5"
+                                style="text-align:center;padding:40px;color:#999;">
+                                Chưa có sản phẩm trong hóa đơn
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+            </div>
+
+        </section>
+
+        <aside class="payment-panel">
+
+        <div class="staff">
+            <div>
+                <div class="staff-label">
+                    Người bán hàng
+                </div>
+
+                <strong id="employee-name">
+                    {{ request.user.full_name|default:request.user.username }}
+                </strong>
+            </div>
+
+            <div>
+                <div class="staff-date"> Thời gian </div>
+                <span id="today"></span>
+            </div>
+
+        </div>
+
+        <div class="order-status">
+            <span>
+                Trạng thái
+            </span>
+
+            <strong id="order-status">
+                Nháp
+            </strong>
+        </div>
+
+        <div class="summary">
+            <div class="row">
+                <span>Tổng tiền hàng</span>
+                <strong id="subtotal">
+                    0 đ
+                </strong>
+            </div>
+
+            <div class="row">
+                <span>Giảm giá</span>
+                <input
+                    type="text"
+                    id="discount"
+                    placeholder="0">
+            </div>
+
+            <div class="row total-row">
+                <span>Cần thanh toán</span>
+                <strong id="total">
+                    0 đ
+                </strong>
+
+            </div>
+
+            <div class="row">
+                <span>Khách thanh toán</span>
+                <input
+                    type="text"
+                    id="paid"
+                    placeholder="0">
+
+            </div>
+
+            <div class="row">
+                <span>Tiền thừa</span>
+                <strong id="change">
+                    0 đ
+                </strong>
+            </div>
+
+        </div>
+
+        <div class="note-wrapper">
+            <label for="note"> Ghi chú </label>
+
+            <textarea
+                id="note"
+                maxlength="255"
+                rows="5"
+                placeholder="Nhập ghi chú cho hóa đơn..."></textarea>
+        </div>
+
+        <div class="action-group">
+            <button class="checkout-btn"
+                    id="btn-checkout"
+                    disabled>
+                <i class="fa-solid fa-money-bill-wave"></i>
+                <span> THANH TOÁN </span>
+            </button>
+
+            <button class="cancel-btn"
+                    id="btn-cancel-order">
+                    <i class="fa-solid fa-trash"></i>
+                    <span>HỦY HÓA ĐƠN</span>
+            </button>
+        </div>
+    </aside>
+
+    </div>
+
+    <div
+        id="loading-overlay"
+        class="loading-overlay hidden">
+        <div class="spinner"></div>
+
+        <p>
+            Đang xử lý...
+        </p>
+
+    </div>
+{% endblock %}
+
+{% block js %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="{% static 'js/homepage.js' %}"></script>
+<script src="{% static 'js/base.js' %}"></script>
+{% endblock %}

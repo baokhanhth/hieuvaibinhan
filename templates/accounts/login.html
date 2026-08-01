@@ -1,0 +1,80 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="vi">
+<link rel="icon" type="image/jpeg" href="{% static 'img/Logo.jpg' %}">
+<title>
+        Hiệu Vải Bình An |
+        {% block title %}{% endblock %}
+</title>
+<head>
+    <meta charset="UTF-8">
+
+    <title>Đăng nhập</title>
+
+    <link rel="stylesheet" href="{% static 'css/auth.css' %}">
+    <link rel="stylesheet" href="{% static 'css/login.css' %}">
+</head>
+
+<body>
+
+<div class="background">
+
+    <div class="auth-card">
+
+        <div class="logo">
+            <img src="{% static 'img/Logo.jpg' %}" alt="Logo">
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <form method="POST">
+            {% csrf_token %}
+
+            <label for="{{ form.username.id_for_label }}">
+                Tên đăng nhập
+            </label>
+
+            {{ form.username }}
+
+            {% if form.username.errors %}
+                <small class="error">
+                    {{ form.username.errors.0 }}
+                </small>
+            {% endif %}
+
+            <label for="{{ form.password.id_for_label }}">
+                Mật khẩu
+            </label>
+
+            {{ form.password }}
+
+            {% if form.password.errors %}
+                <small class="error">
+                    {{ form.password.errors.0 }}
+                </small>
+            {% endif %}
+
+            <div class="forgot">
+                <a href="{% url 'forgot_pwd' %}">
+                    Quên mật khẩu?
+                </a>
+            </div>
+
+            <button type="submit" class="auth-button">
+                Đăng nhập
+            </button>
+        </form>
+
+    </div>
+
+</div>
+
+</body>
+</html>

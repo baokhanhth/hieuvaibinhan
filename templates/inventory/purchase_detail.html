@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+{% comment %} 
+{% load static %}
+{% load money %}
+
+{% block title %}
+Chi tiết phiếu nhập
+{% endblock %}
+
+{% block nav_purchase %}
+active
+{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{% static 'css/order_detail.css' %}">
+<link rel="stylesheet" href="{% static 'css/homepage.css' %}">
+<link rel="stylesheet" href="{% static 'css/base.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <section class="left-panel">
+        <div class="page-header">
+            <div class="header-left">
+                <a href="{% url 'inventory:purchase_list' %}" class="btn-back">
+                    <i class="fa-solid fa-arrow-left"></i>
+                    <span>Quay lại</span>
+                </a>
+            </div>
+            
+            <div class="header-center">
+                <h2>
+                    Chi tiết phiếu nhập
+                    <span class="invoice-code">{{ purchase.purchase_code }}</span>
+                </h2>
+                <span class="status {{ purchase.status }}">{{ purchase.get_status_display }}</span>
+            </div>
+            <div class="header-right"></div>
+        </div>
+
+        <div class="invoice-details">
+            <div class="info-group">
+                <div class="info-row">
+                    <span>Người lập phiếu:</span>
+                    <strong>{{ purchase.employee.full_name|default:purchase.employee.username }}</strong>
+                </div>
+                <div class="info-row">
+                    <span>Thời gian nhập:</span>
+                    <strong>{{ purchase.created_at|date:"d/m/Y H:i" }}</strong>
+                </div>
+                <div class="info-row">
+                    <span>Nhà cung cấp:</span>
+                    <strong>{{ purchase.supplier_name|default:"Nhà cung cấp lẻ" }}</strong>
+                </div>
+            </div>
+
+            <table class="items-table">
+                <thead>
+                    <tr>
+                        <th width="5%" style="text-align:center;">STT</th>
+                        <th width="35%">Mặt hàng</th>
+                        <th width="15%" style="text-align:center;">Số lượng (m)</th>
+                        <th width="20%" style="text-align:right;">Đơn giá nhập</th>
+                        <th width="25%" style="text-align:right;">Thành tiền</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in purchase.items.all %}
+                        <tr>
+                            <td style="text-align:center; color:#666;">{{ forloop.counter }}</td>
+                            <td>
+                                <strong>{{ item.product.fabric_code }}</strong> - {{ item.product.name }}
+                            </td>
+                            <td style="text-align:center;">{{ item.quantity }}</td>
+                            <td style="text-align:right;">{{ item.unit_price|money }}</td>
+                            <td style="text-align:right; font-weight:600; color:#073B68;">
+                                {{ item.subtotal|money }}
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="5" style="text-align:center; color:#999; padding: 20px;">
+                                Không có sản phẩm nào trong phiếu nhập này.
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <div class="invoice-summary">
+                <div class="summary-row">
+                    <span>Tổng tiền hàng:</span>
+                    <strong>{{ purchase.total_amount|money }}</strong>
+                </div>
+                <div class="summary-row total-row">
+                    <span>Đã thanh toán:</span>
+                    <strong style="color: #dc3545;">{{ purchase.total_amount|money }}</strong>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <aside class="right-panel">
+        <div class="note-section">
+            <label><i class="fa-regular fa-comment-dots"></i> Ghi chú phiếu nhập</label>
+            <div class="note-box">
+                {% if purchase.note %}
+                    {{ purchase.note }}
+                {% else %}
+                    <span class="empty-note">Không có ghi chú</span>
+                {% endif %}
+            </div>
+        </div>
+    </aside>
+</div>
+{% endblock %}
+
+{% block js %}
+<script src="{% static 'js/purchase_detail.js' %}"></script>
+<script src="{% static 'js/order_detail.js' %}"></script>
+
+{% endblock %} {% endcomment %}
+{% load static %}
+{% load money %}
+
+{% block title %}
+Chi tiết phiếu nhập
+{% endblock %}
+
+{% block nav_purchase %}
+active
+{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{% static 'css/order_detail.css' %}">
+<link rel="stylesheet" href="{% static 'css/homepage.css' %}">
+<link rel="stylesheet" href="{% static 'css/base.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <section class="left-panel">
+        <div class="page-header">
+            <div class="header-left">
+                <a href="{% url 'inventory:purchase_list' %}" class="btn-back">
+                    <i class="fa-solid fa-arrow-left"></i>
+                    <span>Quay lại</span>
+                </a>
+            </div>
+            
+            <div class="header-center">
+                <h2>
+                    Chi tiết phiếu nhập
+                    <span class="invoice-code">{{ purchase.purchase_code }}</span>
+                </h2>
+            </div>
+        </div>
+
+        <div class="invoice-info">
+            <div class="info-item">
+                <span><b>Mã phiếu nhập</b></span>
+                <strong>{{ purchase.purchase_code }}</strong>
+            </div>
+
+            <div class="info-item">
+                <span>Nhà cung cấp</span>
+                <strong>{{ purchase.supplier_name|default:"Nhà cung cấp lẻ" }}</strong>
+            </div>
+
+            <div class="info-item">
+                <span>Ngày nhập</span>
+                <strong>{{ purchase.created_at|date:"d/m/Y H:i" }}</strong>
+            </div>
+        </div>
+
+        <div class="product-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th width="35%">Mặt hàng</th>
+                        <th width="15%">Số lượng (mét)</th>
+                        <th width="20%">Đơn giá nhập</th>
+                        <th width="20%">Thành tiền</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in purchase.items.all %}
+                        <tr>
+                            <td>
+                                <div class="product-name">
+                                    <strong>{{ item.product.fabric_code }}</strong> - {{ item.product.name }}
+                                </div>
+                            </td>
+                            <td>{{ item.quantity }}</td>
+                            <td>{{ item.unit_price|money }}</td>
+                            <td style="font-weight:600; color:#073B68;">
+                                {{ item.subtotal|money }}
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr class="empty-row">
+                            <td colspan="4">
+                                Không có sản phẩm nào trong phiếu nhập này.
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <aside class="payment-panel">
+        <div class="staff">
+            <div>
+                <div class="staff-label">Người lập</div>
+                <strong>{{ purchase.employee.full_name|default:purchase.employee.username }}</strong>
+            </div>
+            <div>
+                <div class="staff-date">Thời gian</div>
+                <span>{{ purchase.created_at|date:"d/m/Y H:i" }}</span>
+            </div>
+        </div>
+
+        <div class="summary">
+            <div class="row total-row">
+                <span>Tổng tiền hàng</span>
+                <strong>{{ purchase.total_amount|money }}</strong>
+            </div>
+
+            <div class="row">
+                <span>Đã thanh toán</span>
+                <strong style="color: #dc3545;">{{ purchase.total_amount|money }}</strong>
+            </div>
+        </div>
+
+        <div class="note-wrapper">
+            <label>Ghi chú phiếu nhập</label>
+            <div class="note-box">
+                {% if purchase.note %}
+                    {{ purchase.note }}
+                {% else %}
+                    <span class="empty-note">Không có ghi chú</span>
+                {% endif %}
+            </div>
+        </div>
+    </aside>
+</div>
+{% endblock %}
+
+{% block js %}
+<script src="{% static 'js/purchase_detail.js' %}"></script>
+{% endblock %}

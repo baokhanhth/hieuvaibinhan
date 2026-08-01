@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+{% load static %}
+{% load money%}
+{% block title %}
+Chi tiết hóa đơn
+{% endblock %}
+
+{% block nav_order%}
+active
+{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{% static 'css/order_detail.css' %}">
+<link rel="stylesheet" href="{% static 'css/homepage.css' %}">
+<link rel="stylesheet" href="{% static 'css/base.css' %}">
+
+
+{% endblock %}
+
+{% block content %}
+
+{% csrf_token %}
+<input
+    type="hidden"
+    id="csrf-token"
+    value="{{ csrf_token }}">
+
+<input
+    type="hidden"
+    id="order-id"
+    value="{{ order.id }}">
+
+<div class="container">
+
+    <section class="left-panel">
+
+        <div class="page-header">
+
+            <div class="header-left">
+
+                <a
+                    href="{% url 'sales:orders_management' %}"
+                    class="btn-back">
+
+                    <i class="fa-solid fa-arrow-left"></i>
+                    <span>Quay lại</span>
+
+                </a>
+
+            </div>
+
+            <div class="header-center">
+
+                <h2>
+                    Chi tiết hóa đơn
+                    <span class="invoice-code">
+                        {{ order.order_code }}
+                    </span>
+                </h2>
+
+            </div>
+
+        </div>
+
+        <div class="invoice-info">
+
+            <div class="info-item">
+
+                <span><b>Mã hóa đơn</b></span>
+
+                <strong>
+                    {{ order.order_code }}
+                </strong>
+
+            </div>
+
+            <div class="info-item">
+
+                <span>Trạng thái</span>
+
+                <strong class="status {{ order.status }}">
+                    {{ order.get_status_display }}
+                </strong>
+
+            </div>
+
+            <div class="info-item">
+
+                <span>Ngày lập</span>
+
+                <strong>
+                    {{ order.created_at|date:"d/m/Y H:i" }}
+                </strong>
+
+            </div>
+
+        </div>
+
+        <div class="product-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th width="35%"> Mặt hàng </th>
+                        <th width="15%"> Số lượng (mét)</th>
+                        <th width="20%"> Đơn giá</th>
+                        <th width="20%">Thành tiền</th>
+                    </tr>
+                </thead>
+                <tbody>
+
+                {% for item in order.items.all %}
+                    <tr>
+
+                        <td>
+                            <div class="product-name">{{ item.product.name }}</div>
+                        </td>
+
+                        <td> {{ item.quantity }}</td>
+
+                        <td>{{ item.unit_price|money }} </td>
+
+                        <td> {{ item.subtotal|money }}</td>
+                    </tr>
+
+                {% empty %}
+
+                    <tr class="empty-row">
+                        <td colspan="4">
+                            Hóa đơn chưa có sản phẩm
+                        </td>
+                    </tr>
+
+                {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </section>
+        <aside class="payment-panel">
+
+        <div class="staff">
+
+            <div>
+                <div class="staff-label">
+                    Người bán
+                </div>
+
+                <strong>
+                    {{ order.employee.full_name|default:order.employee.username }}
+                </strong>
+
+            </div>
+
+            <div>
+                <div class="staff-date">  Thời gian </div>
+                <span>{{ order.created_at|date:"d/m/Y H:i" }}</span>
+
+            </div>
+
+        </div>
+
+        <div class="order-status">
+
+            <span>Trạng thái </span>
+
+            <strong class="status {{ order.status }}"> {{ order.get_status_display }}</strong>
+
+        </div>
+
+        <div class="summary">
+
+            <div class="row">
+
+                <span>Tổng tiền hàng</span>
+
+                <strong>
+                    {{ order.total_amount|money }}
+                </strong>
+
+            </div>
+
+            <div class="row">
+                <span>Giảm giá</span>
+                <strong>
+                    {{ order.discount|money }}
+                </strong>
+
+            </div>
+
+            <div class="row total-row">
+                <span>Cần thanh toán</span>
+                <strong class="total-money">
+                    {{ order.final_amount|money }}
+                </strong>
+
+            </div>
+
+            <div class="row">
+                <span>Khách trả</span>
+                <strong>
+                    {{ order.paid_amount|money }}
+                </strong>
+
+            </div>
+
+            <div class="row">
+                <span>Tiền thừa</span>
+                <strong>
+                    {{ order.change_amount|money }}
+                </strong>
+            </div>
+
+        </div>
+
+        <div class="note-wrapper">
+            <label>
+                Ghi chú
+            </label>
+            <div class="note-box">
+                {% if order.note %}
+                    {{ order.note }}
+                {% else %}
+                    <span class="empty-note">
+                        Không có ghi chú
+                    </span>
+                {% endif %}
+            </div>
+
+        </div>
+
+        <div class="action-group">
+
+            <a
+
+                href="{% url 'sales:print_invoice' order.id %}"
+                target="_blank"
+                class="{% if can_delete %}half-btn{% else %}full-btn{% endif %} print-btn">
+                <i class="fa-solid fa-print"></i>
+                <span>
+                    In hóa đơn
+                </span>
+            </a>
+
+            {% if can_delete %}
+            <button
+                type="button"
+                id="btn-delete-order"
+                class="half-btn delete-btn"
+                data-id="{{ order.id }}">
+                <i class="fa-solid fa-trash"></i>
+                <span>
+                    Xóa hóa đơn
+                </span>
+            </button>
+            {% endif %}
+        </div>
+    </aside>
+</div>
+<div
+    id="loading-overlay"
+    class="loading-overlay hidden">
+
+    <div class="spinner"></div>
+
+    <p>Đang xử lý...</p>
+
+</div>
+{% endblock %}
+{% block js %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="{% static 'js/order_detail.js' %}"></script>
+{% endblock %}

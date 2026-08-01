@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% load static %}
+{% load money %}
+
+{% block title %} Thêm mặt hàng mới {% endblock %}
+{% block nav_product %} active {% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{% static 'css/inventory.css' %}">
+{% endblock %}
+
+{% block content %}
+    <div class="page-content">
+        <a class="back-link" href="{% url 'inventory:product_list' %}"><i class="fa-solid fa-arrow-left"></i> Quay lại</a>
+        <div class="page-heading">
+            <div>
+                <h1>Thêm mặt hàng mới</h1>
+            </div>
+        </div>
+
+        <section class="detail-card">
+            <form id="createProductForm" method="post" onsubmit="return false;">
+                {% csrf_token %}
+                <div class="detail-stats">
+                    <div class="form-group">
+                        <label for="id_name">{{ form.name.label }}</label>
+                        {{ form.name }}
+                    </div>
+                    <div class="form-group">
+                        <label for="id_cost_price">{{ form.cost_price.label }}</label>
+                        {{ form.cost_price }}
+                    </div>
+                    <div class="form-group">
+                        <label for="id_stock_quantity">{{ form.stock_quantity.label }}</label>
+                        {{ form.stock_quantity }}
+                    </div>
+                    <div class="form-group">
+                        <label for="id_status">{{ form.status.label }}</label>
+                        {{ form.status }}
+                    </div>
+                    <div class="form-group">
+                        <label for="id_minimum_stock"> {{ form.minimum_stock.label }}</label>
+                        {{ form.minimum_stock }}
+                    </div>
+                </div>
+
+                <div class="detail-actions">
+                    <div></div>
+                    <div class="action-buttons">
+                        <a href="{% url 'inventory:product_list' %}" class="btn-cancel">Hủy</a>
+                        <button type="submit" class="btn-save" id="btnSave">
+                            <i class="fa-solid fa-floppy-disk"></i> Thêm
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </section>
+    </div>
+{% endblock %}
+
+{% block js %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="{% static 'js/product_create.js' %}"></script>
+{% endblock %}

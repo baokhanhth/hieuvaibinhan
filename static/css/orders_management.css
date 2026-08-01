@@ -1,0 +1,344 @@
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+/* Khung gom nhóm nút Quay lại + Tiêu đề trang */
+.header-title {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.header-title h2 {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0;
+}
+
+.btn-add { display:inline-flex; align-items:center; justify-content:center; min-width:140px; height:54px; padding:0 22px; background:#0b4f8d; color:#fff; border-radius:28px; font-size:16px; font-weight:700; text-decoration:none; border:1px solid transparent; transition:.2s; }
+.btn-add:hover { background:#0a4173; border-color:#084066; }
+.order-id{
+    color:#073B68;
+    font-weight:700;
+}
+
+.order-amount{
+    font-weight:700;
+    color:#073B68;
+}
+
+.status.completed{
+    background:#dcfae6;
+    color:#067647;
+}
+
+.status.draft{
+    background:#fef3c7;
+    color:#92400e;
+}
+
+.status.cancelled{
+    background:#fee2e2;
+    color:#b42318;
+}
+
+
+/* ===========================
+   Modal
+=========================== */
+
+.modal{
+    display:none;
+    position:fixed;
+    inset:0;
+    z-index:1200;
+
+    justify-content:center;
+    align-items:center;
+
+    background:rgba(0,0,0,.45);
+}
+
+.modal.active{
+    display:flex;
+}
+
+.modal-content{
+    width:90%;
+    background:#fff;
+
+    border-radius:14px;
+
+    overflow:hidden;
+
+    box-shadow:0 15px 40px rgba(0,0,0,.2);
+}
+
+.edit-order-modal{
+    max-width:600px;
+}
+
+.delete-confirmation-modal{
+    max-width:480px;
+}
+
+
+/* ===========================
+   Modal Header
+=========================== */
+
+.modal-header{
+
+    padding:22px 26px;
+
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+
+    border-bottom:1px solid #e5e7eb;
+}
+
+.modal-header h2{
+
+    margin:0;
+
+    font-size:22px;
+
+    color:#132238;
+}
+
+.close{
+
+    font-size:30px;
+
+    color:#888;
+
+    cursor:pointer;
+
+    transition:.2s;
+}
+
+.close:hover{
+
+    color:#111;
+}
+
+
+/* ===========================
+   Modal Body
+=========================== */
+
+.modal-body{
+
+    padding:28px;
+}
+
+.modal-footer{
+
+    display:flex;
+    justify-content:flex-end;
+    gap:12px;
+
+    padding:20px 28px;
+
+    border-top:1px solid #e5e7eb;
+
+    background:#fafafa;
+}
+
+
+/* ===========================
+   Edit Form
+=========================== */
+
+.edit-form{
+
+    display:flex;
+    flex-direction:column;
+    gap:20px;
+}
+
+.form-group{
+
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+}
+
+.form-group label{
+
+    font-size:14px;
+
+    font-weight:600;
+
+    color:#4b5563;
+}
+
+.form-group input,
+.form-group textarea{
+
+    width:100%;
+
+    padding:12px 14px;
+
+    border:1px solid #d9dee7;
+
+    border-radius:10px;
+
+    font-size:15px;
+
+    font-family:"Segoe UI",sans-serif;
+
+    transition:.2s;
+}
+
+.form-group textarea{
+
+    resize:vertical;
+}
+
+.form-group input:focus,
+.form-group textarea:focus{
+
+    outline:none;
+
+    border-color:#073B68;
+
+    box-shadow:0 0 0 3px rgba(7,59,104,.12);
+}
+
+.input-readonly{
+
+    background:#f5f7fb;
+    color:#6b7280;
+}
+
+
+/* ===========================
+   Summary
+=========================== */
+
+.form-summary{
+
+    background:#f8fafc;
+
+    border-radius:10px;
+
+    padding:18px;
+}
+
+.summary-row{
+
+    display:flex;
+    justify-content:space-between;
+
+    font-size:16px;
+
+    font-weight:600;
+}
+
+
+/* ===========================
+   Delete
+=========================== */
+
+.delete-message{
+
+    text-align:center;
+}
+
+.delete-message p{
+
+    margin:0;
+
+    line-height:1.8;
+
+    font-size:15px;
+}
+
+.delete-message strong{
+
+    color:#dc3545;
+}
+
+.btn-primary,
+.btn-secondary,
+.btn-danger{
+
+    min-width:120px;
+
+    height:44px;
+
+    border:none;
+
+    border-radius:10px;
+
+    cursor:pointer;
+
+    font-size:15px;
+
+    font-weight:600;
+
+    transition:.2s;
+}
+
+.btn-primary{
+
+    background:#073B68;
+
+    color:#fff;
+}
+
+.btn-primary:hover{
+
+    background:#0b4f8d;
+}
+
+.btn-secondary{
+
+    background:#6b7280;
+
+    color:#fff;
+}
+
+.btn-secondary:hover{
+
+    background:#4b5563;
+}
+
+.btn-danger{
+
+    background:#dc3545;
+
+    color:#fff;
+}
+
+.btn-danger:hover{
+
+    background:#bb2d3b;
+}
+
+@media(max-width:768px){
+
+    .modal-content{
+
+        width:96%;
+    }
+
+    .modal-body{
+
+        padding:20px;
+    }
+
+    .modal-footer{
+
+        padding:18px 20px;
+    }
+
+}
+
+

@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% load static %}
+{% load money%}
+
+{% block title %}
+    Nhập hàng
+{% endblock %}
+
+{% block nav_purchase %}
+    active
+{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{% static 'css/orders_management.css' %}">
+<link rel="stylesheet" href="{% static 'css/layout.css' %}">
+<link rel="stylesheet" href="{% static 'css/base.css' %}">
+<link rel="stylesheet" href="{% static 'css/inventory.css' %}">
+{% endblock %}
+
+{% block content %}
+
+{% csrf_token %}
+<input type="hidden" id="csrf-token" value="{{ csrf_token }}">
+    <div class="page-content">
+        <div class="page-heading">
+            <div>
+                <h1>NHẬP HÀNG</h1>
+            </div>
+        </div>
+
+        <div class="search-header">
+            <form id="searchForm" class="search-form" method="get" onsubmit="return false;">
+                <label for="q" class="sr-only">Nhập mã phiếu nhập hoặc tên nhà cung cấp...</label>
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input id="q" name="q" value="{{ query }}" placeholder="Nhập mã phiếu hoặc tên nhà cung cấp" autocomplete="off"> 
+            </form>
+            
+            <div class="search-actions">
+                {% if query%}
+                    <a> href="{% url 'inventory:purchase_list' %}"</a>
+                {% endif %}
+                <a href="{% url 'inventory:purchase_create' %}" class="btn-add">
+                    Nhập hàng mới
+                </a>
+            </div>
+        </div> 
+
+        <div class="search-wrapper">
+            <div id="search-result" class="search-result" style="display: none;"></div>
+        </div>
+
+        <section class="table-card">
+            <table>
+                <thead>
+                    <tr>
+                        <th width="18%">Mã phiếu nhập</th>
+                        <th width="25%">Nhà cung cấp</th>
+                        <th width="20%">Ngày nhập</th>
+                        <th width="17%">Tổng tiền</th>
+                        <th width="20%">Chi tiết</th>
+                    </tr>
+                </thead>
+                <tbody id="purchase-list-body">
+                    {% for purchase in purchases %}
+                        <tr class="purchase-row"
+                            data-id="{{ purchase.id }}"
+                            data-status="{{ purchase.status }}"
+                            onclick="window.location='{% url 'inventory:purchase_detail' purchase.id %}'"
+                            style="cursor: pointer;">
+                            
+                            <td><strong>{{ purchase.purchase_code }}</strong></td>
+                            
+                            <td>{{ purchase.supplier_name|default:"Nhà cung cấp lẻ" }}</td>
+                            
+                            <td>{{ purchase.created_at|date:"d/m/Y H:i" }}</td>
+                            
+                            <td class="total-money">{{ purchase.total_amount|money }}</td>
+                            <td><i class="fa-solid fa-eye"></i></td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="5" class="empty-state" style="text-align: center; padding: 30px; color: #666;">
+                                Chưa có phiếu nhập nào
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+    </div>
+
+{% endblock%}
+{% block js %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="{% static 'js/purchase_management.js' %}"></script>
+{% endblock %}

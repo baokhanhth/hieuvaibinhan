@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% load money %}
+
+{% block title %}Báo cáo{% endblock %}
+
+{% block nav_reports %}active{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{% static 'css/base.css' %}">
+<link rel="stylesheet" href="{% static 'css/reports.css' %}">
+<link rel="stylesheet" href="{% static 'css/homepage.css' %}">
+
+{% endblock %}
+
+{% block content %}
+
+<div class="report-container">
+    <div class="page-header">
+
+        <h2>BÁO CÁO DOANH THU</h2>
+    </div>
+
+    <div class="filter-card">
+
+        <div class="filter-title">
+
+            <i class="fa-solid fa-filter"></i>
+            <span>Bộ lọc thời gian</span>
+
+        </div>
+
+        <div class="filter-options">
+            <label>
+                <input
+                    type="radio"
+                    name="filter"
+                    value="today"
+                    checked>
+                Hôm nay
+            </label>
+
+            <label>
+                <input
+                    type="radio"
+                    name="filter"
+                    value="7days">
+                7 ngày gần nhất
+            </label>
+
+            <label>
+
+                <input
+                    type="radio"
+                    name="filter"
+                    value="month">
+                Tháng này
+            </label>
+
+            <label>
+
+                <input
+                    type="radio"
+                    name="filter"
+                    value="year">
+                Năm nay
+
+            </label>
+
+            <label>
+                <input
+                    type="radio"
+                    name="filter"
+                    value="custom">
+                Tùy chọn
+            </label>
+
+        </div>
+
+        <div class="custom-date">
+
+            <div>
+                <label>Từ ngày</label>
+                <input
+                    type="date"
+                    id="from-date">
+            </div>
+
+            <div>
+                <label>Đến ngày</label>
+                <input
+                    type="date"
+                    id="to-date">
+            </div>
+
+            <button
+                id="btn-apply">
+                Áp dụng</button>
+        </div>
+
+    </div>
+
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <div class="kpi-icon">
+                <i class="fa-solid fa-sack-dollar"></i>
+            </div>
+
+            <div>
+
+                <div class="kpi-title">
+                    Tổng doanh thu
+                </div>
+
+                <div
+                    id="total-revenue"
+                    class="kpi-value">
+                    0
+                </div>
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-icon">
+                <i class="fa-solid fa-receipt"></i>
+            </div>
+
+            <div>
+                <div class="kpi-title">
+                    Tổng đơn bán
+                </div>
+
+                <div
+                    id="total-orders"
+                    class="kpi-value">
+                    0
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="chart-card">
+
+        <div class="card-title">
+            Doanh thu theo thời gian
+        </div>
+
+        <canvas
+            id="revenue-chart">
+        </canvas>
+
+    </div>
+
+    <div class="bottom-grid">
+        <div class="chart-card">
+            <div class="card-title"> Top 5 mặt hàng bán chậm </div>
+
+            <canvas id="slow-chart"></canvas>
+
+        </div>
+
+        <div class="chart-card">
+            <div class="card-title">Top 5 mặt hàng bán chạy</div>
+
+            <canvas
+                id="best-chart">
+            </canvas>
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}
+
+{% block js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{% static 'js/reports.js' %}"></script>
+
+{% endblock %}

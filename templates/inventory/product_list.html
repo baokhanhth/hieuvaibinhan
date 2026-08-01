@@ -1,0 +1,113 @@
+{% extends "base.html" %} 
+{% load static %} 
+{% load money%} 
+
+{% block title %} Kho hàng {% endblock %} 
+
+{% block nav_product %} active {% endblock %} 
+
+{% block css %} 
+<link rel="stylesheet" href="{% static 'css/inventory.css' %}"> 
+{% endblock %} 
+
+{% block content %} 
+{% csrf_token %} 
+<input type="hidden" id="csrf-token" value="{{ csrf_token }}"> 
+
+<div class="page-content"> 
+    <div class="page-heading"> 
+        <div> 
+            <h1>KHO HÀNG </h1> 
+        </div> 
+    </div> 
+
+    <div class="search-header">
+        <form class="search-form" method="get"> 
+            <label for="q" class="sr-only">Nhập mặt hàng hoặc mã mặt hàng</label> 
+            <i class="fa-solid fa-magnifying-glass"></i> 
+            <input id="q" name="q" value="{{ query }}" placeholder="Nhập mặt hàng hoặc mã mặt hàng" autocomplete="off"> 
+            
+            <label for="status" class="sr-only">Lọc trạng thái mặt hàng</label> 
+            <select id="status" name="status" onchange="this.form.submit()"> 
+                <option value="">Tất cả trạng thái</option> 
+                {% for value, label in status_choices %} 
+                    <option value="{{ value }}" {% if selected_status == value %} selected{% endif %}>{{ label }}</option> 
+                {% endfor %} 
+            </select> 
+
+            {% if query or selected_status %}
+                <a href="{% url 'inventory:product_list' %}" class="clear-search">Xóa lọc</a>
+            {% endif %} 
+        </form> 
+
+        {% if user.is_owner %}
+            <div class="search-actions">
+                <a href="{% url 'inventory:product_create' %}" class="btn-add">
+                    Thêm mặt hàng mới
+                </a>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="search-wrapper">
+        <div id="search-result" class="search-result" style="display: none;"></div>
+    </div>
+
+    <section class="table-card" aria-label="Danh sách mặt hàng"> 
+        <table> 
+            <thead> 
+                <tr> 
+                    <th>Mã mặt hàng</th> 
+                    <th>Mặt hàng </th> 
+                    {% if user.is_owner %} 
+                        <th>Giá vốn</th> 
+                    {% endif%} 
+                    <th>Giá bán</th> 
+                    <th> 
+                        <a class="sort-link" href="{{ stock_sort_url }}"> Tồn kho (m) 
+                            {% if stock_sort == "stock_asc" %} 
+                                <i class="fa-solid fa-arrow-up"></i> 
+                            {% elif stock_sort == "stock_desc" %} 
+                                <i class="fa-solid fa-arrow-down"></i> 
+                            {% else %} 
+                                <i class="fa-solid fa-sort"></i> 
+                            {% endif %} 
+                        </a> 
+                    </th> 
+                    <th>Trạng thái</th> 
+                </tr> 
+            </thead> 
+            <tbody> 
+                {% for product in products %} 
+                    <tr class="{% if product.stock_quantity <= product.minimum_stock %}low-stock{% endif %}" {% if user.is_owner %} onclick="window.location='{% url 'inventory:product_detail' product.id %}'" style="cursor:pointer;" {% endif%}> 
+                        <td>{{ product.fabric_code }}</td> 
+                        <td>{{ product.name }}</td> 
+                        {% if user.is_owner %} 
+                            <td>{{ product.cost_price| money}}</td> 
+                        {% endif %} 
+                        <td>{{ product.selling_price| money}}</td> 
+                        <td> 
+                            {{ product.stock_quantity|floatformat:2 }} 
+                            {% if product.stock_quantity <= product.minimum_stock %}
+                                <span class="warning"><i class="fa-solid fa-triangle-exclamation"></i> Cảnh báo</span>
+                            {% endif %} 
+                        </td> 
+                        <td>
+                            <span class="status {{ product.status }}">{{ product.get_status_display }}</span>
+                        </td> 
+                    </tr> 
+                {% empty %} 
+                    <td colspan="{% if user.is_owner %}6{% else %}5{% endif %}" class="empty-state"> 
+                        Không tìm thấy mặt hàng phù hợp. 
+                    </td> 
+                {% endfor %} 
+            </tbody> 
+        </table> 
+    </section> 
+</div> 
+{%endblock%} 
+
+{% block js %} 
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> 
+<script src="{% static 'js/product_list.js' %}"></script> 
+{% endblock %}

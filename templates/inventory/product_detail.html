@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% load static %}
+{% load money%}
+{% block title %}
+    Kho hàng
+{% endblock %}
+
+{% block nav_product %}
+    active
+{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{% static 'css/inventory.css' %}">
+{% endblock %}
+
+{% block content %}
+    <div class="page-content detail-page">
+        <a class="back-link" href="{% url 'inventory:product_list' %}"><i class="fa-solid fa-arrow-left"></i> Quay lại</a>
+            <h1>Thông tin chi tiết</h1>
+
+        <section class="detail-card {% if product.stock_quantity <= product.minimum_stock %}low-stock-card{% endif %}">
+            <div class="detail-title">
+                <div>
+                    <p>Ngày thêm vào kho: {{ product.created_at|date:"d/m/Y" }}</p>
+                </div>
+                {% if product.stock_quantity <= product.minimum_stock %}
+                    <span class="warning prominent">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        Tồn kho thấp
+                    </span>
+                {% endif %}
+            </div>
+            
+            <form id="editProductForm" method="post" action="">
+                {% csrf_token %}
+                <div class="detail-stats">
+                    <div class="form-group">
+                        <label for="id_name">{{ form.name.label }}</label>
+                        {{ form.name }}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="id_cost_price">{{ form.cost_price.label }}</label>
+                        {{ form.cost_price }}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="id_profit_margin">{{ form.profit_margin.label }}</label>
+                        {{ form.profit_margin }}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="selling-price">Giá bán</label>
+                        <input id="selling-price" class="form-control" type="text" value="{{ product.selling_price|money|default:'0đ' }}" readonly autocomplete="off">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="id_stock_quantity">Tồn kho</label>
+                        {{ form.stock_quantity }}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="id_minimum_stock">{{ form.minimum_stock.label }}</label>
+                        {{ form.minimum_stock }}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="id_status">{{ form.status.label }}</label>
+                        {{ form.status }}
+                    </div>
+                </div>
+
+                <div class="detail-actions">
+                    <button type="button" class="btn-delete">
+                        <i class="fa-solid fa-trash"></i> Xóa
+                    </button>
+                    
+                    <div class="action-buttons">
+                        <button type="button" 
+                            id="btnEdit"
+                            class="btn-edit">
+                            <i class="fa-solid fa-pen-to-square"></i> Chỉnh sửa
+                        </button>
+
+                        <button type="button"
+                                id="btnCancel"
+                                class="btn-cancel hidden">
+                                <i class="fa-solid fa-xmark"></i> Hủy
+                        </button>
+
+                        <button type="submit"
+                                id="btnSave"
+                                class="btn-save hidden">
+                                <i class="fa-solid fa-floppy-disk"></i> Lưu
+                        </button>
+                    </div>
+                </div> 
+            </form> 
+        </section>
+
+        <section class="history-card">
+            <div class="section-heading">
+                <div>
+                    <h2>Lịch sử giá</h2>
+                    <p>Chỉ ghi nhận lần đầu và các lần giá vốn thay đổi.</p>
+                </div>
+            </div>
+            <table>
+                <thead>
+                    <tr><th>Ngày nhập (Áp dụng)</th><th>Giá vốn</th><th>Giá bán</th></tr>
+                </thead>
+                <tbody>
+                    {% for history in price_history %}
+                        <tr>
+                            <td>{{ history.created_at|date:"d/m/Y H:i:s" }}</td>
+                            <td>{{ history.cost_price|money|default:'0đ'}}</td>
+                            <td>{{ history.selling_price|money|default:'0đ'}}</td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="3" class="empty-state">Chưa có lịch sử giá. Lịch sử được tạo khi thêm mới hoặc thay đổi giá vốn.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+    </div>
+{% endblock%}
+
+{% block js %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+{% if messages %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    {% for message in messages %}
+    Swal.fire({
+        icon: 'success',
+        title: "Thêm mặt hàng thành công",
+        showCloseButton: true,
+        closeButtonHtml: '&times;',
+        confirmButtonText: "Đóng"
+    });
+    {% endfor %}
+});
+</script>
+{% endif %}
+<script src="{% static 'js/product_detail.js' %}?v=2"></script>
+{% endblock %}

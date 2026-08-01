@@ -1,0 +1,14 @@
+.forgot{
+    text-align:right;
+    margin-bottom:20px;
+}
+
+.forgot a{
+    text-decoration:none;
+    color:#0b3760;
+    font-size:24px;
+}
+
+.forgot a:hover{
+    text-decoration:underline;
+}
