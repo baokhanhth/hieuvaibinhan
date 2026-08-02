@@ -1,0 +1,95 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hiệu Vải Bình An | Đổi mật khẩu</title>
+    <link rel="icon" type="image/jpeg" href="{% static 'img/Logo.jpg' %}">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="{% static 'css/auth.css' %}">
+    <link rel="stylesheet" href="{% static 'css/forgot_pwd.css' %}">
+</head>
+
+<body>
+
+<div class="background">
+
+    <div class="auth-card">
+
+        <a class="btn-back" href="javascript:history.back()" title="Quay lại">
+            <i class="fa-solid fa-arrow-left"></i>
+        </a>
+
+        <div class="logo">
+            <img src="{% static 'img/logo.jpg' %}" alt="Logo">
+        </div>
+
+        <h2 class="title">ĐỔI MẬT KHẨU</h2>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert {{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <form method="POST">
+            {% csrf_token %}
+
+            <!-- Mật khẩu hiện tại -->
+            <div class="form-group">
+                <label for="{{ form.old_password.id_for_label }}">
+                    Mật khẩu hiện tại
+                </label>
+                {{ form.old_password }}
+                {% if form.old_password.errors %}
+                    <small class="error">{{ form.old_password.errors.0 }}</small>
+                {% endif %}
+            </div>
+
+            <!-- Mật khẩu mới -->
+            <div class="form-group">
+                <label for="{{ form.new_password.id_for_label }}">
+                    Mật khẩu mới
+                </label>
+                {{ form.new_password }}
+                {% if form.new_password.errors %}
+                    <small class="error">{{ form.new_password.errors.0 }}</small>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.confirm_password.id_for_label }}">
+                    Nhập lại mật khẩu mới
+                </label>
+                {{ form.confirm_password }}
+                {% if form.confirm_password.errors %}
+                    <small class="error">{{ form.confirm_password.errors.0 }}</small>
+                {% endif %}
+            </div>
+
+            <div class="rule">
+                Mật khẩu tối thiểu 8 ký tự.<br>
+                • Có ít nhất 1 chữ hoa.<br>
+                • Có ít nhất 1 chữ số.<br>
+                • Có ít nhất 1 ký tự đặc biệt.
+            </div>
+
+            <button type="submit" class="auth-button" style="margin-top: 20px;">
+                Cập nhật mật khẩu
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
+
+</body>
+</html>

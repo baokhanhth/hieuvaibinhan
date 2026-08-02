@@ -47,17 +47,11 @@
                 <i class="fa-solid fa-magnifying-glass"></i>
 
                 <input
-                    id="search-product"
-                    type="text"
-                    autocomplete="off"
-                    placeholder="Nhập tên hoặc mã hàng...">
+                    id="search-product" type="text"  autocomplete="off" placeholder="Nhập tên hoặc mã hàng...">
 
             </div>
 
-            <div
-                id="search-result"
-                class="search-result">
-            </div>
+            <div id="search-result" class="search-result"></div>
         </div>
 
         <div class="product-table">
@@ -66,10 +60,11 @@
                     <tr>
                         <th width="6%">STT</th>
                         <th width="14%">Mã mặt hàng</th>
-                        <th width="28%">Mặt hàng</th>
-                        <th width="14%">Số lượng (m) </th>
-                        <th width="16%">Đơn giá nhập</th>
-                        <th width="6%">Thành tiền</th>
+                        <th width="24%">Mặt hàng</th>
+                        <th width="14%">Số lượng (m)</th>
+                        <th width="18%">Đơn giá nhập</th>
+                        <th width="18%">Thành tiền</th>
+                        <th width="6%"></th>
                     </tr>
 
                 </thead>
@@ -80,13 +75,9 @@
                         <td colspan="7">
                             Chưa có mặt hàng nào.
                         </td>
-
                     </tr>
-
                 </tbody>
-
             </table>
-
         </div>
 
     </section>
@@ -94,69 +85,34 @@
     <aside class="right-panel">
 
         <div class="purchase-info">
+            <div class="info-row"><span>Mã phiếu</span> 
+                <strong>{{purchase_code }} </strong></div>
 
-            <div class="info-row">
-
-                <span>Người nhập</span>
-
-                <strong>
+            <div class="info-row"><span>Người nhập</span><strong>
                     {{ request.user.full_name|default:request.user.username }}
                 </strong>
 
             </div>
 
             <div class="info-row">
-
-                <span>Ngày nhập</span>
-
-                <strong id="current-date"></strong>
-
-            </div>
-
-            <div class="info-row">
-
-                <span>Mã phiếu</span>
-
-                <strong>Tự động</strong>
-
+                <span>Ngày nhập</span> <strong id="current-date"></strong>
             </div>
 
             <div class="form-group">
-
                 <label>Nhà cung cấp</label>
-
-                <input
-                    id="supplier-name"
-                    type="text"
-                    placeholder="Nhập tên nhà cung cấp">
-
+                <input id="supplier-name" type="text" placeholder="Nhập tên nhà cung cấp">
             </div>
 
             <div class="form-group">
-
                 <label>Số điện thoại</label>
-
-                <input
-                    id="supplier-phone"
-                    type="text"
-                    placeholder="Nhập số điện thoại">
-
+                <input id="supplier-phone" type="text" placeholder="Nhập số điện thoại">
             </div>
 
             <div class="summary">
-
                 <div class="row">
-
                     <span>Tổng tiền</span>
-
-                    <strong id="total-amount">
-
-                        {{ 0|money }}
-
-                    </strong>
-
+                    <strong id="total-amount">{{ 0|money }} </strong>
                 </div>
-
             </div>
 
         </div>

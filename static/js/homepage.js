@@ -133,416 +133,451 @@ function renderSearchResult(products) {
     searchResult.style.display = "block";
 }
 
-// Thêm sản phẩm vừa tìm thấy vào hóa đơn
-searchResult.addEventListener("click", async function (e) {
-    const item = e.target.closest(".search-item");
-    if (!item) {return;}
+    // Thêm sản phẩm vừa tìm thấy vào hóa đơn
+    searchResult.addEventListener("click", async function (e) {
+        const item = e.target.closest(".search-item");
+        if (!item) {return;}
 
-    const id = Number(item.dataset.id);
-    const product = currentProducts.find(p => p.id === id);
+        const id = Number(item.dataset.id);
+        const product = currentProducts.find(p => p.id === id);
 
-    if (!product) {return;}
+        if (!product) {return;}
 
-    await addProduct(product);
-    searchInput.value = "";
-    searchResult.innerHTML = "";
-    searchResult.style.display = "none";
-});
-
-//ẩn danh sách tìm kiếm
-document.addEventListener("click", function (e) {
-
-    if (
-        !searchInput.contains(e.target) &&
-        !searchResult.contains(e.target)
-    ) {
+        await addProduct(product);
+        searchInput.value = "";
+        searchResult.innerHTML = "";
         searchResult.style.display = "none";
-    }
+    });
 
-});
+    //ẩn danh sách tìm kiếm
+    document.addEventListener("click", function (e) {
 
-async function addProduct(product) {
-    if (!currentOrderId) {
-        Swal.fire({ icon: "warning",
-                    title: "Chưa có hóa đơn",
-                    text: "Vui lòng tạo hóa đơn trước."});
-        return;
-    }
+        if (!searchInput.contains(e.target) &&!searchResult.contains(e.target)) {
+            searchResult.style.display = "none";
+        }
 
-    try {
-        const response = await fetch(
-            `/sales/orders/${currentOrderId}/items/`,
-            {
-                method: "POST",
-                headers: getHeaders(),
-                body: JSON.stringify({
-                    product_id: product.id,
-                    quantity: 1
-                })
+    });
+
+    async function addProduct(product) {
+        if (!currentOrderId) {
+            Swal.fire({ icon: "warning",
+                        title: "Chưa có hóa đơn",
+                        text: "Vui lòng tạo hóa đơn trước."});
+            return;
+        }
+
+        try {
+            const response = await fetch(
+                `/sales/orders/${currentOrderId}/items/`,
+                {
+                    method: "POST",
+                    headers: getHeaders(),
+                    body: JSON.stringify({
+                        product_id: product.id,
+                        quantity: 1
+                    })
+                }
+            );
+
+            const result = await response.json();
+
+            if (!result.success) {
+                throw new Error(result.message);
             }
-        );
 
+            await loadOrder(currentOrderId);
+            isSaved = false;
+
+        }
+        catch (error)   {   Swal.fire({
+                            icon: "error",
+                            title: "Không thể thêm sản phẩm",
+                            text: error.message,
+                            showCloseButton: true,
+                            confirmButtonText: "Đóng",
+                        });
+                        }
+
+    }
+
+    async function loadOrder(orderId) {
+        const response = await fetch(`/sales/orders/${orderId}/data`);
         const result = await response.json();
 
         if (!result.success) {
             throw new Error(result.message);
         }
 
-        await loadOrder(currentOrderId);
-        isSaved = false;
+        const order = result.data;
 
-    }
-    catch (error)   {   Swal.fire({
-                        icon: "error",
-                        title: "Không thể thêm sản phẩm",
-                        text: error.message,
-                        showCloseButton: true,
-                        confirmButtonText: "Đóng",
-                    });
-                    }
+        orderItems = order.items;
+        discount = order.discount || 0;
 
-}
+        discountInput.value = discount
+            ? formatMoney(discount)
+            : "";
+        orderStatus.textContent = order.status === "draft" ? "Chờ thanh toán": "Đã thanh toán";
 
-async function loadOrder(orderId) {
-    const response = await fetch(`/sales/orders/${orderId}/data`);
-    const result = await response.json();
-
-    if (!result.success) {
-        throw new Error(result.message);
+        renderTable();
     }
 
-    const order = result.data;
+    function updateCheckoutButton() {
+        const hasItems = orderItems.length > 0;
+        btnCheckout.disabled = !hasItems;
 
-    orderItems = order.items;
-    discount = order.discount || 0;
+    }
 
-    discountInput.value = discount
-        ? formatMoney(discount)
-        : "";
-    orderStatus.textContent = order.status === "draft" ? "Chờ thanh toán": "Đã thanh toán";
+    function updateCheckoutButton() {
+        const hasItems = orderItems.length > 0;
+        btnCheckout.disabled = !hasItems;
+        discountInput.disabled = !hasItems;
+        paidInput.disabled = !hasItems;
+    }
 
-    renderTable();
-}
+    function renderTable() {
+        orderTable.innerHTML = "";
+        if (orderItems.length === 0) {
+            orderTable.innerHTML = `
+                <tr class="empty-row">
+                    <td colspan="5">
+                        Chưa có sản phẩm trong hóa đơn
+                    </td>
+                </tr>
+            `;
+            calculateInvoice();
+            updateCheckoutButton();
+            return;
+        }
 
-function updateCheckoutButton() {
-    const hasItems = orderItems.length > 0;
-    btnCheckout.disabled = !hasItems;
+        orderItems.forEach(item => {
+            const total = item.subtotal;
+            orderTable.innerHTML += `
+                <tr>
+                    <td>${item.product_name}</td>
 
-}
+                    <td>
+                        <input
+                            type="number"
+                            min="0.1"
+                            step="0.1"
+                            value="${item.quantity}"
+                            oninput="if(this.value < 0) this.value = Math.abs(this.value)"
+                            onchange="updateQuantity(${item.id}, this.value)">
+                    </td>
+                    <td>${formatMoney(item.unit_price)}</td>
+                    <td>${formatMoney(total)}</td>
+                    <td>
+                        <button
+                            class="remove-btn"
+                            onclick="removeItem(${item.id})">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </td>
 
-function updateCheckoutButton() {
-    const hasItems = orderItems.length > 0;
-    btnCheckout.disabled = !hasItems;
-    discountInput.disabled = !hasItems;
-    paidInput.disabled = !hasItems;
-}
+                </tr>
+            `;
 
-function renderTable() {
-    orderTable.innerHTML = "";
-    if (orderItems.length === 0) {
-        orderTable.innerHTML = `
-            <tr class="empty-row">
-                <td colspan="5">
-                    Chưa có sản phẩm trong hóa đơn
-                </td>
-            </tr>
-        `;
+        });
+
         calculateInvoice();
         updateCheckoutButton();
-        return;
     }
 
-    orderItems.forEach(item => {
-        const total = item.subtotal;
-        orderTable.innerHTML += `
-            <tr>
-                <td>${item.product_name}</td>
+    async function updateQuantity(id, qty) {
+        qty = parseFloat(qty);
 
-                <td>
-                    <input
-                        type="number"
-                        min="0.1"
-                        step="0.1"
-                        value="${item.quantity}"
-                        oninput="if(this.value < 0) this.value = Math.abs(this.value)"
-                        onchange="updateQuantity(${item.id}, this.value)">
-                </td>
-                <td>${formatMoney(item.unit_price)}</td>
-                <td>${formatMoney(total)}</td>
-                <td>
-                    <button
-                        class="remove-btn"
-                        onclick="removeItem(${item.id})">
-                        <i class="fa-solid fa-trash"></i>
-                    </button>
-                </td>
-
-            </tr>
-        `;
-
-    });
-
-    calculateInvoice();
-    updateCheckoutButton();
-}
-
-async function updateQuantity(id, qty) {
-    qty = parseFloat(qty);
-
-    if (isNaN(qty) || qty <= 0) {
-        Swal.fire({
-            icon: "warning",
-            title: "Số lượng không hợp lệ",
-            text: "Số lượng sản phẩm phải lớn hơn 0.",
-            timer: 1500,
-            showConfirmButton: true,
-            showCloseButton: true
-        });
-        await loadOrder(currentOrderId);
-        return;
-    }
-
-    const response = await fetch(
-        `/sales/orders/${currentOrderId}/items/${id}/`,
-        {
-            method: "PUT",
-            headers: getHeaders(),
-            body: JSON.stringify({
-                quantity: qty
-            })
+        if (isNaN(qty) || qty <= 0) {
+            Swal.fire({
+                icon: "warning",
+                title: "Số lượng không hợp lệ",
+                text: "Số lượng sản phẩm phải lớn hơn 0.",
+                timer: 1500,
+                showConfirmButton: true,
+                showCloseButton: true
+            });
+            await loadOrder(currentOrderId);
+            return;
         }
-    );
 
-    const result = await response.json();
-    if (!result.success) {
-        Swal.fire({
-            icon: "error",
-            text: result.message,
-            showCloseButton: true,
-            confirmButtonText: "Đóng",
-        });
-        return;
-    }
-    await loadOrder(currentOrderId);
-
-}
-
-async function removeItem(id){
-    const response = await fetch(
-        `/sales/orders/${currentOrderId}/items/${id}/`,
-        {
-            method:"DELETE",
-            headers:getHeaders()
-        }
-    );
-
-    const result = await response.json();
-    if(!result.success){
-        Swal.fire({
-            icon:"error",
-            text:result.message,
-            showCloseButton: true,
-            confirmButtonText: "Đóng",
-        });
-        return;
-    }
-    await loadOrder(currentOrderId);
-}
-
-function calculateInvoice(){
-    let subtotal = 0;
-    orderItems.forEach(item=>{subtotal += item.subtotal;    });
-
-    let total = subtotal - discount;
-
-    if(total < 0){
-        total = 0;
-    }
-    subtotalElement.innerText = formatMoney(subtotal);
-    totalAmount = total;
-    totalElement.innerText = formatMoney(total);
-    calculateChange();
-}
-
-function calculateChange(){
-    let subtotal = 0;
-    orderItems.forEach(item=>{ subtotal += item.subtotal;});
-    let total = subtotal - discount;
-    let change = paid - total;    
-    if(change<0){
-        change=0;
-    }
-    changeElement.innerText = formatMoney(change);
-}
-
-function invoiceHasData(){
-    return orderItems.length > 0
-        || discount > 0
-        || paid > 0
-        || noteInput.value.trim() !== "";
-}
-
-function clearInvoice(){
-    orderItems = [];
-    discount = 0;
-    paid = 0;
-
-    discountInput.value = "";
-    paidInput.value = "";
-    noteInput.value = "";
-    isSaved = false;
-    renderTable();
-    updateCheckoutButton();
-}
-
-attachMoneyInput(discountInput, function(value){
-    discount = value;
-    calculateInvoice();
-});
-
-attachMoneyInput(paidInput, function(value){
-    paid = value;
-    calculateChange();
-});
-
-async function checkout() {
-    if (orderItems.length === 0) {Swal.fire   ({
-                                                    icon: "error",
-                                                    title: "Chưa có sản phẩm",
-                                                    text: "Vui lòng thêm ít nhất một sản phẩm.",
-                                                    showCloseButton: true,
-                                                    confirmButtonText: "Đóng",
-                                                });
-        return false;
-    }
-
-    if (paid <= 0) {    Swal.fire   ({
-                                        icon: "warning",
-                                        title: "Chưa nhập tiền thanh toán",
-                                        text: "Vui lòng nhập số tiền khách thanh toán.",
-                                        showCloseButton: true,
-                                        confirmButtonText: "Đóng",
-                                    });
-        return false;
-    }
-
-    const total = parseMoney(totalElement.textContent);
-    if (paid < totalAmount || paid < 0) { Swal.fire({
-                                    icon: "warning",
-                                    title: "Thanh toán không hợp lệ",
-                                    text: "Số tiền khách thanh toán phải lớn hơn hoặc bằng số tiền cần thanh toán.",
-                                    showCloseButton: true,
-                                    confirmButtonText: "Đóng",
-                                });
-        return false;
-    }
-
-    try {
-
-        const response = await fetch(`/sales/orders/${currentOrderId}/checkout/`,
-            {   method: "POST",
+        const response = await fetch(
+            `/sales/orders/${currentOrderId}/items/${id}/`,
+            {
+                method: "PUT",
                 headers: getHeaders(),
+                body: JSON.stringify({
+                    quantity: qty
+                })
             }
         );
 
         const result = await response.json();
-
-        if (!result.success) { throw new Error(result.message);}
-
-        currentOrderId = result.data.next_order_id;
-        invoiceCode.textContent = formatOrderCode(currentOrderId);
-        paid = 0;
-        paidInput.value = "";
-        noteInput.value = "";
-        discount = 0;
-        discountInput.value = "";
-
+        if (!result.success) {
+            Swal.fire({
+                icon: "error",
+                text: result.message,
+                showCloseButton: true,
+                confirmButtonText: "Đóng",
+            });
+            return;
+        }
         await loadOrder(currentOrderId);
 
-        const invoiceUrl = result.data.invoice_url;
-        const swalResult = await Swal.fire({    icon: "success",
-                                                title: "Thanh toán thành công",
-                                                text: "Bạn có muốn in hóa đơn không?",
-                                                showCloseButton: true,
-                                                showCancelButton: true,
-                                                confirmButtonText: "🖨️ In hóa đơn",
-                                                cancelButtonText: "Đóng"});
-        {if (swalResult.isConfirmed) {window.open(invoiceUrl, "_blank");}}
-        return true;
-
-    } catch (error) {   Swal.fire   ({  icon: "error",
-                                        title: "Lỗi",
-                                        text: error.message,
-                                        showCloseButton: true,
-                                        confirmButtonText: "Đóng",
-                                    });
-
-        return false;
-    }
-}
-
-async function showInvoiceActionPopup() {
-
-    if (!invoiceHasData()) {
-        clearInvoice();
-        return;
     }
 
-    const result = await Swal.fire({
-        title: "Hóa đơn chưa thanh toán",
-        text: "Trước khi tạo hóa đơn mới, bạn muốn làm gì với hóa đơn hiện tại?",
-        icon: "warning",
-        showCloseButton: true,
-        showCancelButton: true,
-        showDenyButton: true,
-        confirmButtonText: "💾 Thanh toán",
-        denyButtonText: "🗑️ Xóa hóa đơn",
-        cancelButtonText: "❌ Tiếp tục chỉnh sửa",
-        confirmButtonColor: "#198754",
-        denyButtonColor: "#dc3545",
-        cancelButtonColor: "#6c757d"
+    async function removeItem(id){
+        const response = await fetch(
+            `/sales/orders/${currentOrderId}/items/${id}/`,
+            {
+                method:"DELETE",
+                headers:getHeaders()
+            }
+        );
+
+        const result = await response.json();
+        if(!result.success){
+            Swal.fire({
+                icon:"error",
+                text:result.message,
+                showCloseButton: true,
+                confirmButtonText: "Đóng",
+            });
+            return;
+        }
+        await loadOrder(currentOrderId);
+    }
+
+    function calculateInvoice(){
+        let subtotal = 0;
+        orderItems.forEach(item=>{subtotal += item.subtotal;    });
+
+        let total = subtotal - discount;
+
+        if(total < 0){
+            total = 0;
+        }
+        subtotalElement.innerText = formatMoney(subtotal);
+        totalAmount = total;
+        totalElement.innerText = formatMoney(total);
+        calculateChange();
+    }
+
+    function calculateChange(){
+        let subtotal = 0;
+        orderItems.forEach(item=>{ subtotal += item.subtotal;});
+        let total = subtotal - discount;
+        let change = paid - total;    
+        if(change<0){
+            change=0;
+        }
+        changeElement.innerText = formatMoney(change);
+    }
+
+    function invoiceHasData(){
+        return orderItems.length > 0
+            || discount > 0
+            || paid > 0
+            || noteInput.value.trim() !== "";
+    }
+
+    function clearInvoice(){
+        orderItems = [];
+        discount = 0;
+        paid = 0;
+
+        discountInput.value = "";
+        paidInput.value = "";
+        noteInput.value = "";
+        isSaved = false;
+        renderTable();
+        updateCheckoutButton();
+    }
+
+    attachMoneyInput(discountInput, function(value){
+        discount = value;
+        calculateInvoice();
     });
 
-    if (result.isConfirmed) {
-        await checkout();
-    }
-    else if (result.isDenied) {
-        try {   const response = await fetch("/sales/orders/new-draft/",
-                                                {   method: "POST",
-                                                    headers: getHeaders(),});
+    attachMoneyInput(paidInput, function(value){
+        paid = value;
+        calculateChange();
+    });
 
-                const result = await response.json();
+    async function checkout() {
+        if (orderItems.length === 0) {
+            Swal.fire({
+                icon: "error",
+                title: "Chưa có sản phẩm",
+                text: "Vui lòng thêm ít nhất một sản phẩm.",
+                showCloseButton: true,
+                confirmButtonText: "Đóng",
+            });
+            return false;
+        }
 
-                if (!result.success) {throw new Error(result.message);}
+        if (paid <= 0) {
+            Swal.fire({
+                icon: "warning",
+                title: "Chưa nhập tiền thanh toán",
+                text: "Vui lòng nhập số tiền khách thanh toán.",
+                showCloseButton: true,
+                confirmButtonText: "Đóng",
+            });
+            return false;
+        }
 
-                currentOrderId = result.data.order_id;
-                invoiceCode.textContent = formatOrderCode(currentOrderId);
+        const total = parseMoney(totalElement.textContent);
+        if (paid < totalAmount || paid < 0) {
+            Swal.fire({
+                icon: "warning",
+                title: "Thanh toán không hợp lệ",
+                text: "Số tiền khách thanh toán phải lớn hơn hoặc bằng số tiền cần thanh toán.",
+                showCloseButton: true,
+                confirmButtonText: "Đóng",
+            });
+            return false;
+        }
 
-                paid = 0;
-                discount = 0;
+        try {
+            const response = await fetch(`/sales/orders/${currentOrderId}/checkout/`, {
+                method: "POST",
+                headers: getHeaders(),
+            });
 
-                paidInput.value = "";
-                discountInput.value = "";
-                noteInput.value = "";
+            const result = await response.json();
 
-                await loadOrder(currentOrderId);
+            if (!result.success) { 
+                throw new Error(result.message);
+            }
 
-                Swal.fire({ icon: "success", title: "Đã tạo hóa đơn mới", timer: 1200, showConfirmButton: false,});} 
+            currentOrderId = result.data.next_order_id;
+            invoiceCode.textContent = formatOrderCode(currentOrderId);
+            paid = 0;
+            paidInput.value = "";
+            noteInput.value = "";
+            discount = 0;
+            discountInput.value = "";
+
+            await loadOrder(currentOrderId);
+
+            if (result.data.low_stock_warnings && result.data.low_stock_warnings.length > 0) {
+                const warningHtml = result.data.low_stock_warnings.join("<br>");
                 
-            catch (error) { Swal.fire({ icon: "error", title: "Lỗi", text: error.message, showCloseButton: true, confirmButtonText: "Đóng", }); 
+                await Swal.fire({
+                    icon: "warning",
+                    title: "⚠️ Cảnh báo tồn kho thấp!",
+                    html: warningHtml,
+                    confirmButtonText: "Đã hiểu",
+                    showCloseButton: true
+                });
+
+                // Cập nhật ngay badge màu đỏ trên icon chuông thông báo (Không cần reload)
+                let badge = document.querySelector(".notification-badge");
+                let notifBtn = document.querySelector(".notification-btn");
+                let newCount = result.data.low_stock_warnings.length;
+
+                if (badge) {
+                    let currentCount = parseInt(badge.textContent.trim()) || 0;
+                    badge.textContent = currentCount + newCount;
+                } else if (notifBtn) {
+                    badge = document.createElement("span");
+                    badge.className = "notification-badge";
+                    badge.textContent = newCount;
+                    notifBtn.appendChild(badge);
+                }
+            }
+
+            const invoiceUrl = result.data.invoice_url;
+            const swalResult = await Swal.fire({
+                icon: "success",
+                title: "Thanh toán thành công",
+                text: "Bạn có muốn in hóa đơn không?",
+                showCloseButton: true,
+                showCancelButton: true,
+                confirmButtonText: "🖨️ In hóa đơn",
+                cancelButtonText: "Đóng"
+            });
+
+            if (swalResult.isConfirmed) {
+                window.open(invoiceUrl, "_blank");
+            }
+
+            return true;
+
+        } catch (error) {
+            Swal.fire({
+                icon: "error",
+                title: "Lỗi",
+                text: error.message,
+                showCloseButton: true,
+                confirmButtonText: "Đóng",
+            });
+
+            return false;
         }
     }
-}
 
-if (btnSave) {btnSave.addEventListener("click", async () => {await saveInvoice();});}
+    async function showInvoiceActionPopup() {
 
-btnNewInvoice.addEventListener("click", showInvoiceActionPopup);
-btnCloseInvoice.addEventListener("click", showInvoiceActionPopup);
-btnCancelOrder.addEventListener("click", showInvoiceActionPopup);
-btnCheckout.addEventListener("click", checkout);
+        if (!invoiceHasData()) {
+            clearInvoice();
+            return;
+        }
 
-document.addEventListener("DOMContentLoaded", async () => { if (currentOrderId) {
-        await loadOrder(currentOrderId);}
-    updateCheckoutButton();
-});
+        const result = await Swal.fire({
+            title: "Hóa đơn chưa thanh toán",
+            text: "Trước khi tạo hóa đơn mới, bạn muốn làm gì với hóa đơn hiện tại?",
+            icon: "warning",
+            showCloseButton: true,
+            showCancelButton: true,
+            showDenyButton: true,
+            confirmButtonText: "💾 Thanh toán",
+            denyButtonText: "🗑️ Xóa hóa đơn",
+            cancelButtonText: "❌ Tiếp tục chỉnh sửa",
+            confirmButtonColor: "#198754",
+            denyButtonColor: "#dc3545",
+            cancelButtonColor: "#6c757d"
+        });
+
+        if (result.isConfirmed) {
+            await checkout();
+        }
+        else if (result.isDenied) {
+            try {   const response = await fetch("/sales/orders/new-draft/",
+                                                    {   method: "POST",
+                                                        headers: getHeaders(),});
+
+                    const result = await response.json();
+
+                    if (!result.success) {throw new Error(result.message);}
+
+                    currentOrderId = result.data.order_id;
+                    invoiceCode.textContent = formatOrderCode(currentOrderId);
+
+                    paid = 0;
+                    discount = 0;
+
+                    paidInput.value = "";
+                    discountInput.value = "";
+                    noteInput.value = "";
+
+                    await loadOrder(currentOrderId);
+
+                    Swal.fire({ icon: "success", title: "Đã tạo hóa đơn mới", timer: 1200, showConfirmButton: false,});} 
+                    
+                catch (error) { Swal.fire({ icon: "error", title: "Lỗi", text: error.message, showCloseButton: true, confirmButtonText: "Đóng", }); 
+            }
+        }
+    }
+
+    if (btnSave) {btnSave.addEventListener("click", async () => {await saveInvoice();});}
+
+    btnNewInvoice.addEventListener("click", showInvoiceActionPopup);
+    btnCloseInvoice.addEventListener("click", showInvoiceActionPopup);
+    btnCancelOrder.addEventListener("click", showInvoiceActionPopup);
+    btnCheckout.addEventListener("click", checkout);
+
+    document.addEventListener("DOMContentLoaded", async () => { if (currentOrderId) {
+            await loadOrder(currentOrderId);}
+        updateCheckoutButton();
+    });
 

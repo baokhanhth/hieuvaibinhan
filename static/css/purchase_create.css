@@ -566,5 +566,21 @@
     align-items:center;
     justify-content:space-between;
     margin-bottom:20px;
-    padding:0 12px;      /* cùng mép với bảng */
+    padding:0 12px;      
+}
+
+.search-create{
+    margin-top:8px;
+    font-size:14px;
+}
+
+.search-create a{
+    color:#dc3545;
+    font-weight:700;
+    text-decoration:none;
+    margin-left:6px;
+}
+
+.search-create a:hover{
+    text-decoration:underline;
 }

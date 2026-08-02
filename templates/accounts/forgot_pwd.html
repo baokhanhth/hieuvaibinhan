@@ -2,13 +2,16 @@
 
 <!DOCTYPE html>
 <html lang="vi">
-
 <head>
     <meta charset="UTF-8">
-    <title>Quên mật khẩu</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hiệu Vải Bình An | Quên mật khẩu</title>
+    <link rel="icon" type="image/jpeg" href="{% static 'img/Logo.jpg' %}">
 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+    
     <link rel="stylesheet" href="{% static 'css/auth.css' %}">
-    <link rel="stylesheet" href="{% static 'css/forgot_password.css' %}">
+    <link rel="stylesheet" href="{% static 'css/forgot_pwd.css' %}">
 </head>
 
 <body>
@@ -16,29 +19,32 @@
 <div class="background">
 
     <div class="auth-card">
-
-        <a class="back-link" href="{% url 'login' %}"><i class="fa-solid fa-arrow-left"></i> Quay lại</a>
-
+        <a class="btn-back" href="{% url 'login' %}" title="Quay lại trang đăng nhập">
+            <i class="fa-solid fa-arrow-left"></i>
+        </a>
 
         <div class="logo">
             <img src="{% static 'img/logo.jpg' %}" alt="Logo">
         </div>
 
-        <h2 class="title" align="center">QUÊN MẬT KHẨU</h2>
+        <h2 class="title">QUÊN MẬT KHẨU</h2>
 
         <form method="POST">
             {% csrf_token %}
-            <label for="{{ form.phone.id_for_label }}">
-                Số điện thoại
-            </label>
+            
+            <div class="form-group">
+                <label for="{{ form.phone.id_for_label }}">
+                    Số điện thoại
+                </label>
 
-            {{ form.phone }}
+                {{ form.phone }}
 
-            {% if form.phone.errors %}
-                <small class="error">
-                    {{ form.phone.errors.0 }}
-                </small>
-            {% endif %}
+                {% if form.phone.errors %}
+                    <small class="error">
+                        {{ form.phone.errors.0 }}
+                    </small>
+                {% endif %}
+            </div>
 
             <button type="submit" class="auth-button">
                 Xác nhận
@@ -49,5 +55,7 @@
 
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="{% static 'js/forgot_pwd.js' %}"></script>
 </body>
 </html>

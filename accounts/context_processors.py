@@ -1,20 +1,14 @@
 from .models import Notification
 
-def notification_context(request):
-
-    if not request.user.is_authenticated:
-        return {}
-
-    notifications = Notification.objects.filter(
-        receiver=request.user,
-        is_resolved=False,
-    ).order_by("-created_at")
-
-    unread_count = notifications.filter(
-        is_read=False,
-    ).count()
-
+def notifications_context(request):
+    if request.user.is_authenticated:
+        user_notifications = Notification.objects.filter(receiver=request.user).order_by("-created_at")[:10]
+        unread_count = Notification.objects.filter(receiver=request.user, is_read=False).count()
+        return {
+            "notifications": user_notifications,
+            "unread_notification_count": unread_count,
+        }
     return {
-        "notifications": notifications,
-        "unread_notification_count": unread_count,
+        "notifications": [],
+        "unread_notification_count": 0,
     }

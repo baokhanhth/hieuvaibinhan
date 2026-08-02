@@ -102,3 +102,239 @@ input::placeholder{
     border-radius:8px;
     color:red;
 }
+/* Dark Overlay phủ toàn màn hình */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5); /* Nền mờ tối */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999; /* Đảm bảo đè lên tất cả thành phần khác */
+    backdrop-filter: blur(3px); /* Hiệu ứng làm mờ nhẹ hậu cảnh */
+}
+
+/* Thẻ Modal Popup */
+.modal-card {
+    position: relative;
+    width: 100%;
+    max-width: 420px;
+    background: #ffffff;
+    padding: 32px 28px;
+    border-radius: 20px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+    animation: modalFadeIn 0.25s ease-out;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.92) translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* Nút Đóng (X) góc trên bên phải */
+.modal-close {
+    position: absolute;
+    top: 16px;
+    right: 20px;
+    background: transparent;
+    border: none;
+    font-size: 28px;
+    font-weight: 300;
+    color: #64748b;
+    cursor: pointer;
+    line-height: 1;
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.modal-close:hover {
+    color: #ef4444; /* Đổi màu đỏ khi hover nút đóng */
+    transform: scale(1.15);
+}
+
+/* Hộp thông báo lỗi/thành công trong popup */
+.modal-msg {
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    margin-bottom: 15px;
+}
+.modal-msg.error {
+    background-color: #fef2f2;
+    border: 1px solid #fca5a5;
+    color: #dc2626;
+}
+.modal-msg.success {
+    background-color: #f0fdf4;
+    border: 1px solid #86efac;
+    color: #16a34a;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+/* Overlay nền mờ */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(4px);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+/* Card chứa form */
+.modal-card {
+    position: relative;
+    background: #ffffff;
+    width: 100%;
+    max-width: 440px;
+    padding: 30px 28px;
+    border-radius: 20px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+    animation: modalFadeIn 0.25s ease-out;
+}
+
+@keyframes modalFadeIn {
+    from { opacity: 0; transform: translateY(-12px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Nút Đóng (X) */
+.btn-close-modal {
+    position: absolute;
+    top: 16px;
+    right: 18px;
+    background: #f1f5f9;
+    border: none;
+    font-size: 24px;
+    line-height: 1;
+    color: #64748b;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-close-modal:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+}
+
+.logo-modal {
+    text-align: center;
+    margin-bottom: 8px;
+}
+.logo-modal img {
+    height: 50px;
+    border-radius: 8px;
+}
+
+.modal-title {
+    text-align: center;
+    color: #073B68;
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 20px;
+}
+
+/* Form Group */
+.modal-card .form-group {
+    margin-bottom: 14px;
+    text-align: left;
+}
+.modal-card label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #073B68;
+    margin-bottom: 5px;
+}
+.modal-card input[type="password"] {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    font-size: 14px;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+}
+.modal-card input[type="password"]:focus {
+    outline: none;
+    border-color: #073B68;
+}
+
+/* Hộp Quy tắc mật khẩu */
+.rule-box {
+    background-color: #f0f7ff;
+    border: 1px solid #bae6fd;
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: #0369a1;
+    font-size: 12.5px;
+    line-height: 1.5;
+    margin-top: 14px;
+    margin-bottom: 18px;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 12px;
+}
+.btn-cancel {
+    flex: 1;
+    padding: 11px;
+    background: #f1f5f9;
+    color: #475569;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.btn-cancel:hover {
+    background: #e2e8f0;
+}
+
+.modal-card .auth-button {
+    flex: 1;
+    margin-top: 0;
+}
+
+.modal-alert {
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 13px;
+    margin-bottom: 14px;
+}
+.modal-alert.error {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #dc2626;
+}
+.modal-alert.success {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    color: #166534;
+}

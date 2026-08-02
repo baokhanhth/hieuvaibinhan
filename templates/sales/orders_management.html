@@ -40,17 +40,9 @@ active
 
     <div class="search-header">
         <form id="searchForm" class="search-form" method="get" onsubmit="return false;">
-            <label for="q" class="sr-only">Nhập mã hóa đơn hoặc tên người lập hóa đơn...</label>
-            <i class="fa-solid fa-magnifying-glass"></i>
-            <input id="q" name="q" value="{{ query }}" placeholder="Nhập mã hóa đơn hoặc tên người lập hóa đơn" autocomplete="off">
+            <label for="q" class="sr-only">Nhập mã hóa đơn hoặc tên người lập hóa đơn</label> <i class="fa-solid fa-magnifying-glass"></i>
             
-            <label for="status" class="sr-only">Lọc trạng thái đơn</label>
-            <select id="status" name="status" onchange="window.location.href='?status=' + this.value;">
-                <option value="">Tất cả trạng thái</option>
-                {% for value, label in status_choices %}
-                    <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-            </select>
+            <input id="q" name="q" value="{{ query }}" placeholder="Nhập mã hóa đơn hoặc tên người lập hóa đơn" autocomplete="off">
         </form>
         
             <div class="search-actions">
@@ -59,8 +51,6 @@ active
                 {% endif %}
                 <a href="{% url 'sales:homepage' %}" class="btn-add"> Tạo đơn hàng mới </a>
             </div>
-        </div> <div class="search-wrapper">
-            <div id="search-result" class="search-result" style="display: none;"></div>
     </div>
 
     <section class="table-card">
@@ -68,13 +58,9 @@ active
             <thead>
                 <tr>
                     <th width="18%">Mã hóa đơn</th>
-
                     <th width="18%">Người bán</th>
-
                     <th width="18%%">Thời gian</th>
-
                     <th width="20%">Tổng tiền</th>
-
                     <th width="18%"> Trạng thái</th>
                     <th width= "12%"> Chi tiết</th>
                 </tr>

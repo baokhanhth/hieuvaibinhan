@@ -1,47 +1,22 @@
-from datetime import datetime, timedelta
 import json
-from django.db.models import Sum, Count, F
+from django.db.models import Sum
 from django.utils import timezone
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
-from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render
-from django.db.models import Q, Count
+from django.db.models import Q
 from inventory.models import Product
-from accounts.models import User
 from django.shortcuts import redirect
-from django.urls import reverse
+from .utils import process_search_order_list, success_response, error_response, process_reports_data
 from .models import SalesOrder, SalesOrderItem
 from django.db import transaction
 from inventory.utils import process_search_products
-from django.utils import timezone
 from decimal import Decimal
-from django.db.models.functions import TruncMonth, TruncDay
+from django.http import JsonResponse
+from accounts.models import Notification, User
 
-def success_response(data=None, message="Thành công.", status=200):
-    return JsonResponse(
-        {
-            "success": True,
-            "message": message,
-            "data": data,
-        },
-        status=status,
-    )
-
-def error_response(message="Có lỗi xảy ra.", status=400):
-    return JsonResponse(
-        {
-            "success": False,
-            "message": message,
-            "data": None,
-        },
-        status=status,
-    )
-    
 def get_orders():
-    return (
-                SalesOrder.objects.select_related("employee").order_by("-created_at")
-    )
+    return (SalesOrder.objects.select_related("employee").order_by("-created_at"))
 
 def get_order(order_id):
     return get_object_or_404(
@@ -107,10 +82,6 @@ def can_delete_order(user, order):
 
 @transaction.atomic
 def process_delete_order(order, user):
-
-    # Nhân viên: Chỉ được xóa hóa đơn nháp.
-    # Chủ cửa hàng: Được xóa mọi hóa đơn. Nếu hóa đơn đã thanh toán thì cập nhật thành hủy và hoàn tồn kho.
-    
     if not can_delete_order(user, order):
         raise ValidationError("Bạn không có quyền xóa hóa đơn đã thanh toán.")
 
@@ -179,34 +150,48 @@ def process_delete_order_item(item):
 
 @transaction.atomic
 def process_checkout(order):
-
     if order.status != SalesOrder.Status.DRAFT:
         raise ValidationError("Hóa đơn không hợp lệ.")
 
     items = order.items.select_related("product")
-
     if not items.exists():
         raise ValidationError("Hóa đơn chưa có sản phẩm.")
 
+    # 1. Kiểm tra tồn kho đủ bán
     for item in items:
         product = Product.objects.select_for_update().get(pk=item.product_id)
         if product.stock_quantity < item.quantity:
             raise ValidationError(f"Sản phẩm '{product.name}' không đủ tồn kho.")
 
-    for item in items:
+    # Danh sách lưu các mặt hàng chạm hoặc dưới ngưỡng tồn tối thiểu
+    low_stock_products = []
+    active_users = list(User.objects.filter(is_active=True))
 
+    # 2. Trừ tồn kho & kiểm tra ngưỡng tối thiểu
+    for item in items:
         product = Product.objects.select_for_update().get(pk=item.product_id)
         product.stock_quantity -= item.quantity
         product.save(update_fields=["stock_quantity"])
+
+        if product.stock_quantity <= product.minimum_stock:
+            low_stock_products.append(product)
+
+            for user in active_users:
+                Notification.objects.create(
+                    receiver=user,
+                    product=product,
+                    type=Notification.Type.LOW_STOCK,
+                    title="Cảnh báo tồn kho thấp",
+                    message=f"Sản phẩm '{product.name}' ({product.fabric_code}) hiện chỉ còn {product.stock_quantity:.1f}m (dưới/bằng ngưỡng tối thiểu {product.minimum_stock:.1f}m)."
+                )
+
     _update_order_total(order)
 
     order.status = SalesOrder.Status.COMPLETED
-
     order.completed_at = timezone.now()
+    order.save(update_fields=["status", "updated_at", "completed_at"])
 
-    order.save(update_fields=[ "status","updated_at","completed_at",])
-
-    return order
+    return order, low_stock_products
 
 @transaction.atomic
 def process_cancel(order):
@@ -251,142 +236,17 @@ def reports(request):
 
 @login_required(login_url="login")
 def reports_data(request):
-    filter_type = request.GET.get("filter", "today")
+    filter_type = request.GET.get("filter", "30days")
     from_date_str = request.GET.get("from_date")
     to_date_str = request.GET.get("to_date")
 
-    now = timezone.now()
-    start_date = None
-    end_date = now
-
-    # Xác định khoảng thời gian theo bộ lọc
-    if filter_type == "today":
-        start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    elif filter_type == "7days":
-        start_date = now - timedelta(days=7)
-    elif filter_type == "month":
-        start_date = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    elif filter_type == "year":
-        start_date = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
-    elif filter_type == "custom" and from_date_str and to_date_str:
-        try:
-            parsed_start = datetime.strptime(from_date_str, "%Y-%m-%d")
-            parsed_end = datetime.strptime(to_date_str, "%Y-%m-%d").replace(hour=23, minute=59, second=59)
-            
-            # Đồng bộ hóa múi giờ để khớp hoàn toàn với biến 'now' (offset-aware)
-            parsed_start = timezone.make_aware(parsed_start)
-            parsed_end = timezone.make_aware(parsed_end)
-            
-            if parsed_start > now:
-                start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
-            else:
-                start_date = parsed_start
-
-            if parsed_end > now:
-                end_date = now
-            else:
-                end_date = parsed_end
-        except ValueError:
-            pass
-
-    # Query hóa đơn đã thanh toán trong khoảng thời gian hợp lệ
-    orders = SalesOrder.objects.filter(status=SalesOrder.Status.COMPLETED)
-    if start_date:
-        orders = orders.filter(created_at__gte=start_date)
-    if end_date:
-        orders = orders.filter(created_at__lte=end_date)
-
-    # 1. Tính KPIs tổng quan
-    total_revenue = orders.aggregate(sum=Sum('final_amount'))['sum'] or 0
-    total_orders = orders.count()
-
-    # 2. Thống kê sản phẩm bán chạy / bán chậm
-    order_items = SalesOrderItem.objects.filter(order__in=orders)
-
-    if total_orders == 0:
-        best_sellers = []
-        slow_sellers = []
-    else:
-        # BÁN CHẠY: Lấy các mặt hàng bán nhiều nhất từ các hóa đơn (Sắp xếp giảm dần số lượng)
-        best_sellers = list(
-            order_items
-            .values(product_name=F('product__name'))
-            .annotate(total_qty=Sum('quantity'))
-            .order_by('-total_qty')[:5]
-        )
-
-        # BÁN CHẬM: Lấy toàn bộ sản phẩm Active, đối chiếu với số lượng đã bán để tìm món bán ít nhất
-        active_products = Product.objects.filter(status=Product.Status.ACTIVE)
-        sales_dict = {
-            item['product__id']: item['total'] 
-            for item in order_items.values('product__id').annotate(total=Sum('quantity'))
-        }
-        
-        slow_sellers_list = []
-        for prod in active_products:
-            sold_qty = float(sales_dict.get(prod.id, 0))
-            slow_sellers_list.append({"product_name": prod.name, "total_qty": sold_qty})
-        
-        # Sắp xếp tăng dần (số lượng từ thấp lên cao) để lấy các món bán chậm nhất
-        slow_sellers_list.sort(key=lambda x: x['total_qty'])
-        slow_sellers = slow_sellers_list[:5]
-
-    # 3. Thống kê doanh thu và số lượng đơn hàng theo ngày (Đảm bảo lấp đầy khoảng thời gian)
-    revenue_by_date = (
-        orders
-        .annotate(date=TruncDay('created_at'))
-        .values('date')
-        .annotate(
-            sum_revenue=Sum('final_amount'),
-            order_count=Count('id')
-        )
-        .order_by('date')
+    data = process_reports_data(
+        filter_type=filter_type,
+        from_date_str=from_date_str,
+        to_date_str=to_date_str
     )
     
-    # Chuyển kết quả database thành một dictionary để tra cứu nhanh theo ngày (YYYY-MM-DD)
-    revenue_map = {
-        item['date'].strftime('%Y-%m-%d'): {
-            'revenue': float(item['sum_revenue'] or 0),
-            'orders': int(item['order_count'] or 0)
-        } 
-        for item in revenue_by_date if item['date']
-    }
-
-    # Sinh danh sách đầy đủ tất cả các ngày từ start_date đến end_date
-    chart_labels = []
-    chart_revenue_data = []
-    chart_orders_data = []
-
-    # Ép kiểu start_date và end_date về dạng date thuần túy để chạy vòng lặp
-    current_day = start_date.date() if start_date else end_date.date()
-    final_day = end_date.date()
-
-    while current_day <= final_day:
-        day_str = current_day.strftime('%Y-%m-%d')
-        chart_labels.append(day_str)
-        
-        # Nếu ngày đó có doanh thu thì lấy, không thì mặc định là 0
-        if day_str in revenue_map:
-            chart_revenue_data.append(revenue_map[day_str]['revenue'])
-            chart_orders_data.append(revenue_map[day_str]['orders'])
-        else:
-            chart_revenue_data.append(0.0)
-            chart_orders_data.append(0)
-            
-        current_day += timedelta(days=1)
-
-    return JsonResponse({
-        "success": True,
-        "total_revenue": float(total_revenue),
-        "total_orders": total_orders,
-        "chart": {
-            "labels": chart_labels,
-            "revenue": chart_revenue_data,
-            "orders": chart_orders_data
-        },
-        "best_sellers": best_sellers,
-        "slow_sellers": slow_sellers
-    })
+    return JsonResponse(data)
 
     
 @login_required(login_url="login")
@@ -598,25 +458,34 @@ def order_item_detail(request, order_id, item_id):
     
 @login_required(login_url="login")
 def checkout_order(request, order_id):
-    if request.method != "POST": 
-        return error_response("Method not allowed.", status=405,)
+    if request.method != "POST":
+        return error_response("Method not allowed.", status=405)
 
     try:
-        order = get_object_or_404(SalesOrder,pk=order_id, employee=request.user,)
+        order = get_object_or_404(SalesOrder, pk=order_id, employee=request.user)
 
-        process_checkout(order)
-
+        order, low_stock_products = process_checkout(order)
         new_order = get_or_create_draft_order(request.user)
-        
-        return success_response( data={ "next_order_id": new_order.id,
-                                        "invoice_url": f"/sales/orders/{order.id}/print/",},
-            message="Thanh toán hóa đơn thành công.")
+
+        warnings = [
+            f"Mặt hàng <b>{p.name}</b> ({p.fabric_code}) chỉ còn <b>{p.stock_quantity:.1f}m</b> (tồn tối thiểu: {p.minimum_stock:.1f}m)!"
+            for p in low_stock_products
+        ]
+
+        return success_response(
+            data={
+                "next_order_id": new_order.id,
+                "invoice_url": f"/sales/orders/{order.id}/print/",
+                "low_stock_warnings": warnings  
+            },
+            message="Thanh toán hóa đơn thành công."
+        )
 
     except ValidationError as e:
         return error_response(e.messages[0])
-
-    except Exception:
-        return error_response("Không thể thanh toán hóa đơn.",status=500,)
+    except Exception as e:
+        return error_response("Không thể thanh toán hóa đơn.", status=500)
+    
 
 @login_required(login_url="login")
 def cancel_order(request, order_id):
@@ -650,33 +519,10 @@ def print_invoice(request, order_id):
 
 @login_required(login_url="login")
 def orders_list(request):
-    # Lấy tham số từ URL
     query = request.GET.get("q", "").strip()
-    selected_status = request.GET.get("status", "").strip()
     
-    # Lấy toàn bộ đơn hàng
-    orders = SalesOrder.objects.select_related("employee").all().order_by("-created_at")
-
-    # XỬ LÝ TÌM KIẾM CHUẨN XÁC
-    if query:
-        #
-        code_value = query.upper().removeprefix("HDB").lstrip("0").strip()
-        
-        if code_value.isdigit():
-            orders = orders.filter(pk=int(code_value))
-        else:
-            # Nếu là chuỗi chữ -> Tìm theo username, first_name hoặc last_name của nhân viên
-            orders = orders.filter(
-                Q(employee__first_name__icontains=query) |
-                Q(employee__last_name__icontains=query)
-            )
-
-    # Xử lý lọc theo trạng thái
-    valid_statuses = {value for value, _label in SalesOrder.Status.choices}
-    if selected_status in valid_statuses:
-        orders = orders.filter(status=selected_status)
-    else:
-        selected_status = ""
+    # Lấy danh sách hóa đơn theo từ khóa
+    orders = process_search_order_list(keyword=query)
 
     return render(
         request,
@@ -684,49 +530,28 @@ def orders_list(request):
         {
             "orders": orders,
             "query": query,
-            "selected_status": selected_status,
-            "status_choices": SalesOrder.Status.choices,
         },
     )
+
     
 @login_required(login_url="login")
 def search_orders_list(request):
-    # Lấy tham số từ URL
     query = request.GET.get("q", "").strip()
-    selected_status = request.GET.get("status", "").strip()
     
-    # Lấy toàn bộ đơn hàng, mặc định sắp xếp mới nhất lên đầu
-    orders = SalesOrder.objects.select_related("employee").all().order_by("-created_at")
+    orders = process_search_order_list(keyword=query)
 
-    # Xử lý tìm kiếm chuẩn xác
-    if query:
-        # Làm sạch chuỗi tìm kiếm mã hóa đơn 
-        code_value = query.upper().replace(" ", "").removeprefix("HDB").lstrip("0")
-        
-        if code_value.isdigit():
-            # Nếu người dùng nhập số -> Tìm chính xác theo ID (khóa chính) của hóa đơn
-            orders = orders.filter(pk=int(code_value))
-        else:
-            # Nếu người dùng nhập chữ -> Tìm theo tên nhân viên (full_name hoặc username)
-            orders = orders.filter(
-                Q(employee__username__icontains=query) |
-                Q(employee__full_name__icontains=query)
-            )
+    data = []
+    for order in orders:
+        employee_name = getattr(order.employee, 'full_name', '') or order.employee.get_full_name() or order.employee.username
+        data.append({
+            "id": order.id,
+            "order_code": order.order_code,
+            "employee_name": employee_name,
+            "created_at": order.created_at.strftime("%d/%m/%Y %H:%M"),
+            "final_amount": float(order.final_amount),
+            "status": order.status,
+            "status_display": order.get_status_display(),
+            "detail_url": f"/sales/orders/{order.id}/" if order.status != "draft" else f"/sales/?order={order.id}"
+        })
 
-    # Xử lý lọc theo trạng thái
-    valid_statuses = {value for value, _label in SalesOrder.Status.choices}
-    if selected_status in valid_statuses:
-        orders = orders.filter(status=selected_status)
-    else:
-        selected_status = ""
-
-    return render(
-        request,"sales/orders_management.html",
-        {
-            "orders": orders,
-            "query": query,
-            "selected_status": selected_status,
-            "status_choices": SalesOrder.Status.choices,
-        },
-    )
-    
+    return JsonResponse({"success": True, "data": data})

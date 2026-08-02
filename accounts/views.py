@@ -1,63 +1,38 @@
 from django.shortcuts import render, redirect
 from django.contrib import messages
-from .models import Notification, User 
-from django.contrib.auth import (authenticate,login,logout)
+from accounts.models import Notification, User 
+from django.contrib.auth import (authenticate,login,logout, update_session_auth_hash)
 from django.views.decorators.cache import never_cache
+from django.contrib.auth import get_user_model
 
-import random
+from .forms import ( ChangePasswordForm, LoginForm,ForgotPasswordForm,ResetPasswordForm,)
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+import re
 
-from .forms import (
-    LoginForm,
-    ForgotPasswordForm,
-    ResetPasswordForm,
-)
+User = get_user_model()
 
 @never_cache
 def logout_view(request):
     logout(request)
-
+    
     response = redirect("login")
-
     response["Cache-Control"] = "no-cache, no-store, must-revalidate"
     response["Pragma"] = "no-cache"
     response["Expires"] = "0"
 
     return response
 
-# @never_cache
-# def login_view(request):
-#     # if request.user.is_authenticated:
-#     #     return redirect("sales:homepage")
-    
-#     form = LoginForm(request.POST or None)
-
-#     if request.method == "POST" and form.is_valid():
-#         user = authenticate(
-#             request,
-#             username=form.cleaned_data["username"],
-#             password=form.cleaned_data["password"],
-#         )
-
-#         if user:
-#             login(request, user)
-#             return redirect("sales:homepage")
-
-#         messages.error(request,"Sai tài khoản hoặc mật khẩu.")
-
-#     response = render(request,"accounts/login.html",{"form": form,})
-
-#     response["Cache-Control"] = "no-cache, no-store, must-revalidate"
-#     response["Pragma"] = "no-cache"
-#     response["Expires"] = "0"
-
-#     return response
 
 @never_cache
 def login_view(request):
-    # if request.user.is_authenticated:
-    #     return redirect("sales:homepage")
+    initial_data = {}
     
-    form = LoginForm(request.POST or None)
+    reset_username = request.session.pop("reset_username", None)
+    if reset_username:
+        initial_data["username"] = reset_username
+
+    form = LoginForm(request.POST or None, initial=initial_data)
 
     if request.method == "POST" and form.is_valid():
         user = authenticate(
@@ -84,18 +59,40 @@ def login_view(request):
     return response
 
 
+def reset_pwd(request):
+    phone = request.session.get("reset_phone")
+    
+    if not phone:
+        messages.error(request, "Phiên làm việc đã hết hạn. Vui lòng thử lại.")
+        return redirect("forgot_pwd")
+
+    form = ResetPasswordForm(request.POST or None)
+
+    if request.method == "POST" and form.is_valid():
+        try:
+            user = User.objects.get(phone=phone)
+            user.set_password(form.cleaned_data["newPWD"])
+            user.save()
+
+            request.session["reset_username"] = user.username
+            request.session.pop("reset_phone", None)
+            
+            messages.success(request, "Đổi mật khẩu thành công. Vui lòng đăng nhập lại.",)
+            return redirect("login")
+        except User.DoesNotExist:
+            messages.error(request, "Không tìm thấy tài khoản tương ứng.")
+            return redirect("forgot_pwd")
+
+    return render(request, "accounts/reset_pwd.html", {"form": form})
+
 def forgot_pwd(request):
     form = ForgotPasswordForm(request.POST or None)
 
     if request.method == "POST" and form.is_valid():
         phone_number = form.cleaned_data["phone"]
         
-        # Kiểm tra xem số điện thoại có tồn tại trong hệ thống hay không
         if User.objects.filter(phone=phone_number).exists():
-            # Lưu số điện thoại vào session để trang reset_pwd biết đang đổi mật khẩu cho ai
             request.session["reset_phone"] = phone_number
-            
-            messages.success(request, "Xác thực thành công, vui lòng nhập mật khẩu mới.")
             return redirect("reset_pwd")
         else:
             form.add_error("phone", "Số điện thoại không tồn tại trong hệ thống. Vui lòng kiểm tra lại.")
@@ -103,46 +100,30 @@ def forgot_pwd(request):
     return render(request, "accounts/forgot_pwd.html", {"form": form})
 
 
-def reset_pwd(request):
-    form = ResetPasswordForm(request.POST or None)
+@login_required(login_url="login")
+def change_pwd(request):
+    if request.method == "POST":
+        old_password = request.POST.get("old_password", "").strip()
+        new_password = request.POST.get("new_password", "").strip()
+        confirm_password = request.POST.get("confirm_password", "").strip()
 
-    if request.method == "POST" and form.is_valid():
-        phone = request.session.get("phone")
-        if phone is None:
-            messages.error(request,"Phiên làm việc đã hết hạn.")
-            return redirect("forgot_pwd")
+        if not request.user.check_password(old_password):
+            return JsonResponse({"success": False, "message": "Mật khẩu hiện tại không chính xác."})
 
-        user = User.objects.get(phone=phone)
-        user.set_password(form.cleaned_data["newPWD"])
+        if new_password != confirm_password:
+            return JsonResponse({"success": False, "message": "Mật khẩu xác nhận không khớp."})
 
-        user.save()
+        request.user.set_password(new_password)
+        request.user.save()
+        update_session_auth_hash(request, request.user)
 
-        request.session.pop("phone", None)
-        messages.success(request,"Đổi mật khẩu thành công.")
-        return redirect("login")
+        return JsonResponse({"success": True, "message": "Đổi mật khẩu thành công!"})
 
-    return render(request,"accounts/reset_pwd.html",{"form": form})
+    return JsonResponse({"success": False, "message": "Phương thức không hợp lệ."}, status=405)
 
-def process_create_low_stock_notification(product):
-
-    users = User.objects.filter(is_active=True)
-
-    for user in users:
-
-        exists = Notification.objects.filter(
-            receiver=user,
-            product=product,
-            type=Notification.Type.LOW_STOCK,
-            is_resolved=False,
-        ).exists()
-
-        if exists:
-            continue
-
-        Notification.objects.create(
-            receiver=user,
-            product=product,
-            type=Notification.Type.LOW_STOCK,
-            title="Cảnh báo sắp hết hàng",
-            message=(f'Loại vải "{product.name}" chỉ còn 'f'{product.stock_quantity} m. '"Vui lòng nhập thêm hàng."),
-        )
+@login_required(login_url="login")
+def mark_notifications_read(request):
+    if request.method == "POST":
+        Notification.objects.filter(receiver=request.user, is_read=False).update(is_read=True)
+        return JsonResponse({"success": True})
+    return JsonResponse({"success": False, "message": "Method not allowed"}, status=405)

@@ -2,15 +2,11 @@
 
 <!DOCTYPE html>
 <html lang="vi">
-<link rel="icon" type="image/jpeg" href="{% static 'img/Logo.jpg' %}">
-<title>
-        Hiệu Vải Bình An |
-        {% block title %}{% endblock %}
-</title>
 <head>
     <meta charset="UTF-8">
-
-    <title>Đăng nhập</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hiệu Vải Bình An | Đăng nhập</title>
+    <link rel="icon" type="image/jpeg" href="{% static 'img/Logo.jpg' %}">
 
     <link rel="stylesheet" href="{% static 'css/auth.css' %}">
     <link rel="stylesheet" href="{% static 'css/login.css' %}">
@@ -28,7 +24,7 @@
 
         {% if messages %}
             {% for message in messages %}
-                <div class="alert">
+                <div class="alert alert-{{ message.tags }}">
                     {{ message }}
                 </div>
             {% endfor %}
@@ -76,5 +72,8 @@
 
 </div>
 
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="{% static 'js/login.js' %}"></script>
 </body>
 </html>

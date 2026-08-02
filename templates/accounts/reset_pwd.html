@@ -5,10 +5,11 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Tạo mật khẩu mới</title>
-
+    <title>Hiệu Vải Bình An | Tạo mật khẩu mới</title>
+    <link rel="icon" type="image/jpeg" href="{% static 'img/Logo.jpg' %}">
     <link rel="stylesheet" href="{% static 'css/auth.css' %}">
-    <link rel="stylesheet" href="{% static 'css/forgot_password.css' %}">
+    <link rel="stylesheet" href="{% static 'css/layout.css' %}">
+    <link rel="stylesheet" href="{% static 'css/forgot_pwd.css' %}">
 </head>
 
 <body>
@@ -16,15 +17,9 @@
 <div class="background">
 
     <div class="auth-card">
-
-        <a href="{% url 'verify_otp' %}" class="back">
-            &#8592;
-        </a>
-
         <div class="logo">
             <img src="{% static 'img/logo.jpg' %}" alt="Logo">
         </div>
-
         <h2 class="title">Tạo mật khẩu mới</h2>
 
         <form method="POST">
@@ -44,7 +39,7 @@
             {% endif %}
 
             <label for="{{ form.confirmPWD.id_for_label }}">
-                Nhập lại mật khẩu
+                Nhập lại mật khẩu mới
             </label>
 
             {{ form.confirmPWD }}
@@ -63,7 +58,7 @@
             </div>
 
             <button type="submit" class="auth-button">
-                Lưu
+                Đổi mật khẩu
             </button>
 
         </form>
@@ -71,6 +66,45 @@
     </div>
 
 </div>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+    const pwdInput = document.querySelector('input[name="newPWD"]');
+    
+    if (!pwdInput) return;
 
+    const ruleLength = document.getElementById("rule-length");
+    const ruleUppercase = document.getElementById("rule-uppercase");
+    const ruleNumber = document.getElementById("rule-number");
+    const ruleSpecial = document.getElementById("rule-special");
+
+    pwdInput.addEventListener("input", function () {
+        const val = this.value;
+
+        if (val.length >= 8) {
+            ruleLength.classList.add("valid");
+        } else {
+            ruleLength.classList.remove("valid");
+        }
+
+        if (/[A-Z]/.test(val)) {
+            ruleUppercase.classList.add("valid");
+        } else {
+            ruleUppercase.classList.remove("valid");
+        }
+
+        if (/\d/.test(val)) {
+            ruleNumber.classList.add("valid");
+        } else {
+            ruleNumber.classList.remove("valid");
+        }
+
+        if (/[!@#$%^&*(),.?":{}|<script>\-_=+\\[\];'/`~]/.test(val)) {
+            ruleSpecial.classList.add("valid");
+        } else {
+            ruleSpecial.classList.remove("valid");
+        }
+    });
+});
+</script>
 </body>
 </html>

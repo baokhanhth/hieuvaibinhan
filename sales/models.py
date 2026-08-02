@@ -52,7 +52,7 @@ class SalesOrder(models.Model):
 
     @property
     def order_code(self):
-        return f"HDB{self.pk:07d}" if self.pk else "HDBMỚI"
+        return f"HDB{self.pk:07d}" if self.pk else "HDBM"
 
     def __str__(self):
         return self.order_code

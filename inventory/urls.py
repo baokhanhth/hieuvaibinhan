@@ -9,10 +9,10 @@ urlpatterns = [
     path("create/", views.product_create, name="product_create"),
     path("product-detail/<int:product_id>/", views.product_detail, name="product_detail"),
     path("products/search/", views.product_search, name="product_search"),
-    # path("products/management/", views.purchase_management, name="purchase_management"),
     
     path("purchase/", views.purchase_list, name="purchase_list",),
     path("purchase/search/", views.search_purchase, name="search_purchase",),
+    path("purchase/search-product/",views.product_purchase_search,name="product_purchase_search",),
     path("purchase/create/", views.purchase_create, name="purchase_create",),
     path("purchase/<int:purchase_id>/",views.purchase_detail,name="purchase_detail",),
 ]

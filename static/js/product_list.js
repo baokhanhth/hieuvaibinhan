@@ -1,76 +1,124 @@
 document.addEventListener("DOMContentLoaded", () => {
     const searchInput = document.getElementById("q");
-    const searchResult = document.getElementById("search-result");
+    const statusSelect = document.getElementById("status");
+    const tableBody = document.getElementById("product-table-body");
+    const productPage = document.getElementById("product-page");
     const searchForm = document.getElementById("searchForm");
+    
+    // Kiểm tra xem người dùng hiện tại có phải Owner hay không
+    const isOwner = productPage ? productPage.dataset.isOwner === "true" : false;
 
-    if (!searchInput || !searchResult || !searchForm) {
-        return;
-    }
+    if (!searchInput || !tableBody) return;
 
-    searchInput.addEventListener("input", async function () {
-        const keyword = this.value.trim();
-        if (!keyword) {
-            searchResult.innerHTML = "";
-            searchResult.style.display = "none";
-            return;
-        }
+    let debounceTimer = null;
+
+    // Hàm gọi API và cập nhật trực tiếp vào <tbody>
+    async function fetchAndRenderTable() {
+        const keyword = searchInput.value.trim();
+        const status = statusSelect ? statusSelect.value : "";
 
         try {
-            const response = await fetch(`/inventory/products/search/?q=${encodeURIComponent(keyword)}`);
+            const url = `/inventory/products/search/?q=${encodeURIComponent(keyword)}&status=${encodeURIComponent(status)}`;
+            const response = await fetch(url);
             const result = await response.json();
+
             if (!result.success) {
-                searchResult.innerHTML = "";
-                searchResult.style.display = "none";
+                renderEmptyTable("Không tải được dữ liệu.");
                 return;
             }
 
-            renderSearchResult(result.data);
+            renderTableBody(result.data);
         } catch (error) {
-            console.error("Product search failed", error);
-            searchResult.innerHTML = "";
-            searchResult.style.display = "none";
+            console.error("Lỗi tìm kiếm sản phẩm:", error);
+            renderEmptyTable("Không thể kết nối đến máy chủ.");
         }
-    });
+    }
 
-    function renderSearchResult(products) {
-        if (!products.length) {
-            searchResult.innerHTML = `
-                <div class="search-empty">
-                    Không tìm thấy kết quả. Bạn có thể thêm mặt hàng mới.
-                </div>
-            `;
-            searchResult.style.display = "block";
+    // Hàm vẽ lại danh sách các dòng trong <tbody>
+    function renderTableBody(products) {
+        if (!products || products.length === 0) {
+            renderEmptyTable("Không tìm thấy mặt hàng phù hợp.");
             return;
         }
 
-        searchResult.innerHTML = products.map(product => `
-            <div class="search-item" data-id="${product.id}">
-                <div class="item-title">${product.fabric_code} - ${product.name}</div>
-                <div class="item-meta">${product.stock_quantity} mét • ${formatMoney(product.selling_price)}</div>
-            </div>
-        `).join("");
-        searchResult.style.display = "block";
+        tableBody.innerHTML = products.map(product => {
+            const isLowStock = product.stock_quantity <= product.minimum_stock;
+            const rowClass = isLowStock ? "low-stock" : "";
+            const cursorStyle = isOwner ? 'style="cursor:pointer;"' : '';
+            const clickAttr = isOwner ? `onclick="window.location='${product.detail_url}'"` : '';
+
+            const costPriceTd = isOwner 
+                ? `<td>${formatMoney(product.cost_price)}</td>` 
+                : '';
+
+            const warningSpan = isLowStock 
+                ? `<span class="warning"><i class="fa-solid fa-triangle-exclamation"></i> Cảnh báo</span>` 
+                : '';
+
+            return `
+                <tr class="${rowClass}" ${cursorStyle} ${clickAttr}>
+                    <!-- 1. ĐÃ SỬA: Dùng product.fabric_code thay vì product.id -->
+                    <td>${escapeHtml(product.fabric_code)}</td>
+                    <td>${escapeHtml(product.name)}</td>
+                    ${costPriceTd}
+                    <td>${formatMoney(product.selling_price)}</td>
+                    <td>
+                        ${Number(product.stock_quantity).toFixed(2)}
+                        ${warningSpan}
+                    </td>
+                    <td>
+                        <span class="status ${product.status}">${escapeHtml(product.status_display)}</span>
+                    </td>
+                </tr>
+            `;
+        }).join("");
+    }
+
+    function renderEmptyTable(message) {
+        const colSpan = isOwner ? 6 : 5;
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="${colSpan}" class="empty-state">
+                    ${message}
+                </td>
+            </tr>
+        `;
     }
 
     function formatMoney(value) {
-        return Number(value).toLocaleString("vi-VN") + " đ";
+        return Number(value || 0).toLocaleString("vi-VN") + " đ";
     }
 
-    searchResult.addEventListener("click", function (event) {
-        const item = event.target.closest(".search-item");
-        if (!item) {
-            return;
-        }
+    function escapeHtml(text) {
+        if (!text) return "";
+        return String(text)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
 
-        const productId = item.dataset.id;
-        if (productId) {
-            window.location.href = `/inventory/product-detail/${productId}/`;
-        }
+    // Tự động tìm kiếm sau khi ngừng gõ 300ms (Debounce)
+    searchInput.addEventListener("input", () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+            fetchAndRenderTable();
+        }, 300);
     });
 
-    document.addEventListener("click", function (event) {
-        if (!searchResult.contains(event.target) && event.target !== searchInput) {
-            searchResult.style.display = "none";
-        }
-    });
+    // Thay đổi trạng thái lọc cũng cập nhật lại bảng lập tức
+    if (statusSelect) {
+        statusSelect.addEventListener("change", () => {
+            fetchAndRenderTable();
+        });
+    }
+
+    // Chặn reload trang khi bấm Enter ở ô tìm kiếm
+    if (searchForm) {
+        searchForm.addEventListener("submit", (e) => {
+            e.preventDefault();
+            fetchAndRenderTable();
+        });
+    }
 });

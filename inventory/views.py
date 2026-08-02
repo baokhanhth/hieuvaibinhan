@@ -8,90 +8,61 @@ from django.db.models import (
     IntegerField,
     Q,
     Value,
-    When,
-)
+    When,)
 
 from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponseForbidden
-from django.db.models import Q
 from .models import Product, PurchaseReceipt, PurchaseItem
-from .utils import process_search_products
+from .utils import success_response,error_response, process_search_products, process_search_purchase
 from .forms import ProductForm
 import json
 from django.db import transaction
 from django.urls import reverse
 
-def success_response(data=None, message="Thành công.", status=200):
-    return JsonResponse(
-        {
-            "success": True,
-            "message": message,
-            "data": data,
-        },
-        status=status,
-    )
 
-def error_response(message="Có lỗi xảy ra.", status=400):
-    return JsonResponse(
-        {   "success": False,
-            "message": message,
-            "data": None,
-        },
-        status=status,
-    )
-
+@login_required(login_url="login")
 def product_search(request):
     if request.method != "GET":
-        return error_response("Method not allowed.",status=405,)
+        return JsonResponse({"success": False, "message": "Method not allowed"}, status=405)
 
     keyword = request.GET.get("q", "").strip()
+    status = request.GET.get("status", "").strip()
 
-    products = process_search_products(keyword)
+    products = process_search_products(keyword=keyword, status=status)
+    products = products.order_by("low_stock_order", "pk")
 
     data = []
-
     for product in products:
         data.append({
             "id": product.id,
-            "fabric_code": product.fabric_code,
+            "fabric_code": product.fabric_code, 
             "name": product.name,
-            "cost_price": product.cost_price,
+            "cost_price": float(product.cost_price),
             "selling_price": float(product.selling_price),
-            "stock_quantity": product.stock_quantity,
+            "stock_quantity": float(product.stock_quantity),
+            "minimum_stock": float(product.minimum_stock),
+            "status": product.status,
+            "status_display": product.get_status_display(),
+            "detail_url": f"/inventory/product-detail/{product.id}/",
         })
 
-    return success_response(data=data)
+    return JsonResponse({"success": True, "data": data})
 
 @login_required(login_url="login")
 def product_list(request):
     query = request.GET.get("q", "").strip()
     selected_status = request.GET.get("status", "").strip()
     stock_sort = request.GET.get("sort", "").strip()
-    products = Product.objects.all()
 
-    products = Product.objects.annotate(
-        is_low_stock=Case(
-            When(stock_quantity__lte=F('minimum_stock'), then=Value(0)), 
-            default=Value(1),                                           
-            output_field=IntegerField(),
-        )
-    )
-    if query:
-        filters = Q(name__icontains=query)
-        code_value = query.upper().removeprefix("VAI-").removeprefix("VAI")
-        if code_value.isdigit():
-            filters |= Q(pk=int(code_value))
-        products = products.filter(filters)
+    # Gọi hàm lọc từ utils
+    products = process_search_products(keyword=query, status=selected_status)
 
-    valid_statuses = {value for value, _label in Product.Status.choices}
-    if selected_status in valid_statuses:
-        products = products.filter(status=selected_status)
+    if stock_sort in {"stock_asc", "stock_desc"}:
+        stock_order = "-stock_quantity" if stock_sort == "stock_desc" else "stock_quantity"
+        products = products.order_by("low_stock_order", stock_order, "pk")
     else:
-        selected_status = ""
-
-    if stock_sort not in {"stock_asc", "stock_desc"}:
-        stock_sort = ""
+        products = products.order_by("low_stock_order", "pk")
 
     next_stock_sort = "stock_desc" if stock_sort == "stock_asc" else "stock_asc"
     stock_sort_params = {"sort": next_stock_sort}
@@ -99,24 +70,6 @@ def product_list(request):
         stock_sort_params["q"] = query
     if selected_status:
         stock_sort_params["status"] = selected_status
-
-    stock_order = "-stock_quantity" if stock_sort == "stock_desc" else "stock_quantity"
-
-    products = products.annotate(
-    low_stock_order=Case(
-        When(
-            stock_quantity__lte=F("minimum_stock"),
-            then=Value(0),
-        ),
-        default=Value(1),
-        output_field=IntegerField(),
-    )
-)
-
-    if stock_sort:
-        products = products.order_by("low_stock_order", stock_order, "pk")
-    else:
-        products = products.order_by("low_stock_order", "pk")
 
     return render(
         request,
@@ -130,7 +83,6 @@ def product_list(request):
             "stock_sort_url": f"?{urlencode(stock_sort_params)}",
         },
     )
-
 
 @login_required(login_url="login")
 def product_detail(request, product_id):
@@ -163,8 +115,21 @@ def product_create(request):
         return HttpResponseForbidden("Bạn không có quyền thực hiện thao tác này.")
 
     if request.method == "GET":
+        # 1. Tự động tính Mã mặt hàng tiếp theo (Ví dụ: VAI000011)
+        last_product = Product.objects.order_by("-pk").first()
+        next_id = (last_product.pk + 1) if last_product else 1
+        next_fabric_code = f"VAI{next_id:06d}"
+
+        # 2. Thiết lập các giá trị mặc định cho Form
+        form = ProductForm(initial={
+            "profit_margin": 30,      # Mặc định % Lợi nhuận là 30%
+            "minimum_stock": 10,      # Mặc định tồn kho tối thiểu là 10m
+            "status": "active",       # Mặc định trạng thái là Còn bán
+        })
+
         return render(request, "inventory/product_create.html", {
-            "form": ProductForm(),
+            "form": form,
+            "next_fabric_code": next_fabric_code,
         })
 
     if request.method == "POST":
@@ -183,35 +148,23 @@ def product_create(request):
                 })
 
             cost_price = Decimal(str(data.get("cost_price", 0)))
-            profit_margin = Decimal(str(data.get("profit_margin", 0)))
+            profit_margin = Decimal(str(data.get("profit_margin", 30)))  # Mặc định 30 nếu không gửi
             stock_quantity = Decimal(str(data.get("stock_quantity", 0)))
-            minimum_stock = Decimal(str(data.get("minimum_stock", 0)))
+            minimum_stock = Decimal(str(data.get("minimum_stock", 10)))   # Mặc định 10 nếu không gửi
 
-            # Thống nhất kiểm tra Giá vốn phải > 0
             if cost_price <= 0:
-                return JsonResponse({
-                    "success": False, 
-                    "message": "Giá vốn phải lớn hơn 0!"
-                })
+                return JsonResponse({"success": False, "message": "Giá vốn phải lớn hơn 0!"})
 
             if stock_quantity <= 0:
-                return JsonResponse({
-                    "success": False, 
-                    "message": "Tồn kho phải lớn hơn 0!"
-                })
+                return JsonResponse({"success": False, "message": "Tồn kho phải lớn hơn 0!"})
 
             if minimum_stock <= 0:
-                return JsonResponse({
-                    "success": False, 
-                    "message": "Tồn kho tối thiểu phải lớn hơn 0!"
-                })
+                return JsonResponse({"success": False, "message": "Tồn kho tối thiểu phải lớn hơn 0!"})
 
             if profit_margin < 0:
-                return JsonResponse({
-                    "success": False, 
-                    "message": "% Lợi nhuận không được nhỏ hơn 0!"
-                })
+                return JsonResponse({"success": False, "message": "% Lợi nhuận không được nhỏ hơn 0!"})
 
+            # Tạo sản phẩm (mã mặt hàng fabric_code sẽ tự sinh trong hàm save/property của Model)
             product = Product.objects.create(
                 name=name,
                 cost_price=cost_price,
@@ -228,61 +181,22 @@ def product_create(request):
             })
 
         except (InvalidOperation, TypeError, ValueError):
-            return JsonResponse({
-                "success": False, 
-                "message": "Dữ liệu số nhập vào không hợp lệ!"
-            })
+            return JsonResponse({"success": False, "message": "Dữ liệu số nhập vào không hợp lệ!"})
         except json.JSONDecodeError:
-            return JsonResponse({
-                "success": False, 
-                "message": "Dữ liệu gửi lên không đúng định dạng JSON."
-            })
+            return JsonResponse({"success": False, "message": "Dữ liệu gửi lên không đúng định dạng JSON."})
         except Exception as e:
-            return JsonResponse({
-                "success": False, 
-                "message": f"Lỗi hệ thống: {str(e)}"
-            })
+            return JsonResponse({"success": False, "message": f"Lỗi hệ thống: {str(e)}"})
 
     return JsonResponse({"success": False, "message": "Phương thức không được hỗ trợ."}, status=405)
     
-@login_required
-def purchase_list(request):
-    query = request.GET.get("q", "").strip()
-    
-    purchases = PurchaseReceipt.objects.select_related("employee").all().order_by("-created_at")
 
-    if query:
-        code_value = query.upper().replace(" ", "").removeprefix("PN").lstrip("0")
-        if code_value.isdigit():
-            purchases = purchases.filter(pk=int(code_value))
-        else:
-            purchases = purchases.filter(supplier__name__icontains=query)
-
-    return render(
-        request,
-        "inventory/purchase_management.html",
-        {
-            "purchases": purchases,
-            "query": query,
-        },
-    )
-
-@login_required
+@login_required(login_url="login")
 def search_purchase(request):
     query = request.GET.get("q", "").strip()
-    if not query:
-        return JsonResponse({"success": True, "data": []})
-
-    purchases = PurchaseReceipt.objects.select_related("employee").all().order_by("-created_at")
     
-    code_value = query.upper().replace(" ", "").removeprefix("PN").lstrip("0")
-    if code_value.isdigit():
-        purchases = purchases.filter(pk=int(code_value))
-    else:
-        purchases = purchases.filter(supplier_name__icontains=query)
-
+    purchases = process_search_purchase(query=query)
     data = []
-    for p in purchases[:10]:
+    for p in purchases[:15]:
         data.append({
             "id": p.id,
             "purchase_code": p.purchase_code,
@@ -293,37 +207,47 @@ def search_purchase(request):
     
     return JsonResponse({"success": True, "data": data})
 
-@login_required
+@login_required(login_url="login")
+def purchase_list(request):
+    query = request.GET.get("q", "").strip()
+    
+    purchases = process_search_purchase(query=query)
+
+    return render(request,
+        "inventory/purchase_management.html",
+        {"purchases": purchases,
+            "query": query,},)
+    
+@login_required(login_url="login")
 def purchase_detail(request, purchase_id):
     purchase = get_object_or_404(
         PurchaseReceipt.objects.select_related("employee").prefetch_related("items__product"),
         pk=purchase_id)
 
-    return render(
-        request, 
-        "inventory/purchase_detail.html",
-        {
-            "purchase": purchase,
-        }
-    )
+    return render(request, "inventory/purchase_detail.html",{"purchase": purchase,})
 
-@login_required
+@login_required(login_url="login")
+def product_purchase_search(request):
+    keyword = request.GET.get("q","").strip()
+    queryset = process_search_products(keyword)
+    data = []
+    for product in queryset[:10]:
+        data.append({
+            "id": product.id,
+            "fabric_code": product.fabric_code,
+            "name": product.name,})
+    return JsonResponse({ "success": True,"data": data})
+
+@login_required(login_url="login")
 def purchase_create(request):
-
     if request.method == "GET":
-        return render(
-            request,
-            "inventory/purchase_create.html",
-        )
+        return render(request,"inventory/purchase_create.html",)
 
     try:
-
         body = json.loads(request.body)
-
         supplier_name = body.get("supplier_name", "").strip()
         supplier_phone = body.get("supplier_phone", "").strip()
         items = body.get("items", [])
-
         if not items:
             return error_response("Phiếu nhập phải có ít nhất một mặt hàng.")
 
@@ -345,18 +269,13 @@ def purchase_create(request):
 
                 if product_id:
 
-                    product = Product.objects.select_for_update().get(
-                        pk=product_id
-                    )
+                    product = Product.objects.select_for_update().get(pk=product_id)
 
                     product.cost_price = unit_price
 
                 else:
-
-                    product = Product.objects.create(
-                        name=item["name"],
-                        cost_price=unit_price,
-                    )
+                    product = Product.objects.create(name=item["name"],cost_price=unit_price,
+                        profit_margin=30, stock_quantity=0, minimum_stock=10, status="active",)
 
                 product.stock_quantity += quantity
                 product.save()

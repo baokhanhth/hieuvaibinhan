@@ -1,6 +1,6 @@
 {% extends "base.html" %} 
 {% load static %} 
-{% load money%} 
+{% load money %} 
 
 {% block title %} Kho hàng {% endblock %} 
 
@@ -14,21 +14,21 @@
 {% csrf_token %} 
 <input type="hidden" id="csrf-token" value="{{ csrf_token }}"> 
 
-<div class="page-content"> 
+<div class="page-content" id="product-page" data-is-owner="{{ user.is_owner|yesno:'true,false' }}"> 
     <div class="page-heading"> 
         <div> 
-            <h1>KHO HÀNG </h1> 
+            <h1>KHO HÀNG</h1> 
         </div> 
     </div> 
 
     <div class="search-header">
-        <form class="search-form" method="get"> 
+        <form id="searchForm" class="search-form" method="get"> 
             <label for="q" class="sr-only">Nhập mặt hàng hoặc mã mặt hàng</label> 
             <i class="fa-solid fa-magnifying-glass"></i> 
             <input id="q" name="q" value="{{ query }}" placeholder="Nhập mặt hàng hoặc mã mặt hàng" autocomplete="off"> 
             
             <label for="status" class="sr-only">Lọc trạng thái mặt hàng</label> 
-            <select id="status" name="status" onchange="this.form.submit()"> 
+            <select id="status" name="status"> 
                 <option value="">Tất cả trạng thái</option> 
                 {% for value, label in status_choices %} 
                     <option value="{{ value }}" {% if selected_status == value %} selected{% endif %}>{{ label }}</option> 
@@ -49,19 +49,15 @@
         {% endif %}
     </div>
 
-    <div class="search-wrapper">
-        <div id="search-result" class="search-result" style="display: none;"></div>
-    </div>
-
     <section class="table-card" aria-label="Danh sách mặt hàng"> 
         <table> 
             <thead> 
                 <tr> 
                     <th>Mã mặt hàng</th> 
-                    <th>Mặt hàng </th> 
+                    <th>Mặt hàng</th> 
                     {% if user.is_owner %} 
                         <th>Giá vốn</th> 
-                    {% endif%} 
+                    {% endif %} 
                     <th>Giá bán</th> 
                     <th> 
                         <a class="sort-link" href="{{ stock_sort_url }}"> Tồn kho (m) 
@@ -77,15 +73,15 @@
                     <th>Trạng thái</th> 
                 </tr> 
             </thead> 
-            <tbody> 
+            <tbody id="product-table-body"> 
                 {% for product in products %} 
-                    <tr class="{% if product.stock_quantity <= product.minimum_stock %}low-stock{% endif %}" {% if user.is_owner %} onclick="window.location='{% url 'inventory:product_detail' product.id %}'" style="cursor:pointer;" {% endif%}> 
+                    <tr class="{% if product.stock_quantity <= product.minimum_stock %}low-stock{% endif %}" {% if user.is_owner %} onclick="window.location='{% url 'inventory:product_detail' product.id %}'" style="cursor:pointer;" {% endif %}> 
                         <td>{{ product.fabric_code }}</td> 
                         <td>{{ product.name }}</td> 
                         {% if user.is_owner %} 
-                            <td>{{ product.cost_price| money}}</td> 
+                            <td>{{ product.cost_price|money }}</td> 
                         {% endif %} 
-                        <td>{{ product.selling_price| money}}</td> 
+                        <td>{{ product.selling_price|money }}</td> 
                         <td> 
                             {{ product.stock_quantity|floatformat:2 }} 
                             {% if product.stock_quantity <= product.minimum_stock %}
@@ -97,15 +93,17 @@
                         </td> 
                     </tr> 
                 {% empty %} 
-                    <td colspan="{% if user.is_owner %}6{% else %}5{% endif %}" class="empty-state"> 
-                        Không tìm thấy mặt hàng phù hợp. 
-                    </td> 
+                    <tr>
+                        <td colspan="{% if user.is_owner %}6{% else %}5{% endif %}" class="empty-state"> 
+                            Không tìm thấy mặt hàng phù hợp. 
+                        </td> 
+                    </tr>
                 {% endfor %} 
             </tbody> 
         </table> 
     </section> 
 </div> 
-{%endblock%} 
+{% endblock %} 
 
 {% block js %} 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> 
