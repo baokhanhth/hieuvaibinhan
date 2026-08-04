@@ -151,12 +151,12 @@
         </div>
 
         <div class="note-wrapper">
-            <label for="note"> Ghi chú </label>
-
+            <label for="note">Ghi chú</label>
             <textarea
                 id="note"
+                name="note"
                 maxlength="255"
-                rows="5"
+                rows="2"
                 placeholder="Nhập ghi chú cho hóa đơn..."></textarea>
         </div>
 
@@ -175,17 +175,6 @@
             </button>
         </div>
     </aside>
-
-    </div>
-
-    <div
-        id="loading-overlay"
-        class="loading-overlay hidden">
-        <div class="spinner"></div>
-
-        <p>
-            Đang xử lý...
-        </p>
 
     </div>
 {% endblock %}

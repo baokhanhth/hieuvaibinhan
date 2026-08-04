@@ -26,19 +26,27 @@ def error_response(message="Có lỗi xảy ra.", status=400):
         status=status,
     )
     
-def process_search_order_list(keyword=""):
-    orders = SalesOrder.objects.select_related("employee").all().order_by("-created_at")
+def process_search_order_list(keyword="", status=""):
+    orders = (SalesOrder.objects.select_related("employee").order_by("-created_at"))
 
     keyword = keyword.strip()
+
     if keyword:
-        code_value = keyword.upper().replace(" ", "").removeprefix("HDB").lstrip("0")
-        
-        if code_value.isdigit():
-            orders = orders.filter(pk=int(code_value))
-        else:
-            orders = orders.filter(
-                Q(employee__username__icontains=keyword) |
-                Q(employee__full_name__icontains=keyword))           
+        filters = (
+            Q(employee__username__icontains=keyword) |
+            Q(employee__full_name__icontains=keyword)
+        )
+
+        code = keyword.upper().replace(" ", "").replace("HDB", "").lstrip("0")
+
+        if code.isdigit():
+            filters |= Q(pk=int(code))
+
+        orders = orders.filter(filters)
+
+    if status:
+        orders = orders.filter(status=status)
+
     return orders
 
 def process_reports_data(filter_type="30days", from_date_str=None, to_date_str=None):
@@ -64,11 +72,9 @@ def process_reports_data(filter_type="30days", from_date_str=None, to_date_str=N
             parsed_start = timezone.make_aware(parsed_start)
             parsed_end = timezone.make_aware(parsed_end)
             
-            # Chặn ngày tương lai
             start_date = now.replace(hour=0, minute=0, second=0, microsecond=0) if parsed_start > now else parsed_start
             end_date = now if parsed_end > now else parsed_end
 
-            # Đảo vị trí nếu Từ ngày lớn hơn Đến ngày
             if start_date > end_date:
                 start_date, end_date = end_date.replace(hour=0, minute=0, second=0, microsecond=0), start_date.replace(hour=23, minute=59, second=59)
 

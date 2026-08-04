@@ -279,17 +279,6 @@
     font-size:17px;
 }
 
-.payment-panel textarea{
-    margin:20px;
-    flex:1;
-    resize:none;
-    border:1px solid #ccc;
-    border-radius:10px;
-    padding:15px;
-    font-size:16px;
-    outline:none;
-}
-
 .save-btn{
     margin:20px;
     height:55px;
@@ -396,16 +385,42 @@
     color:#073B68;
 }
 
-.note-wrapper{
-    margin:20px;
-    display:flex;
-    flex-direction:column;
-    gap:8px;
+/* Khối bao ngoài ô ghi chú */
+.note-wrapper {
+    margin: 12px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
 }
 
-.note-wrapper label{
-    font-weight:600;
-    color:#555;
+.note-wrapper label {
+    font-weight: 600;
+    color: #555;
+    font-size: 14px;
+}
+
+
+.payment-panel textarea,
+.note-wrapper textarea {
+    margin: 0;                
+    width: 100%;
+    height: 52px;            
+    min-height: 48px;
+    max-height: 58px;
+    resize: none;            
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 14px;
+    line-height: 1.4;
+    outline: none;
+    box-sizing: border-box;
+}
+
+.payment-panel textarea:focus,
+.note-wrapper textarea:focus {
+    border-color: #073B68;
+    box-shadow: 0 0 0 2px rgba(7, 59, 104, 0.1);
 }
 
 .action-group{

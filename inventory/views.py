@@ -19,7 +19,7 @@ from .forms import ProductForm
 import json
 from django.db import transaction
 from django.urls import reverse
-
+from django.core.paginator import Paginator
 
 @login_required(login_url="login")
 def product_search(request):
@@ -55,7 +55,6 @@ def product_list(request):
     selected_status = request.GET.get("status", "").strip()
     stock_sort = request.GET.get("sort", "").strip()
 
-    # Gọi hàm lọc từ utils
     products = process_search_products(keyword=query, status=selected_status)
 
     if stock_sort in {"stock_asc", "stock_desc"}:
@@ -63,6 +62,12 @@ def product_list(request):
         products = products.order_by("low_stock_order", stock_order, "pk")
     else:
         products = products.order_by("low_stock_order", "pk")
+        
+    paginator = Paginator(products, 10)
+
+    page_number = request.GET.get("page")
+
+    page_obj = paginator.get_page(page_number)
 
     next_stock_sort = "stock_desc" if stock_sort == "stock_asc" else "stock_asc"
     stock_sort_params = {"sort": next_stock_sort}
@@ -75,7 +80,8 @@ def product_list(request):
         request,
         "inventory/product_list.html",
         {
-            "products": products,
+            "products": page_obj,
+            "page_obj": page_obj,
             "query": query,
             "selected_status": selected_status,
             "status_choices": Product.Status.choices,
@@ -210,13 +216,23 @@ def search_purchase(request):
 @login_required(login_url="login")
 def purchase_list(request):
     query = request.GET.get("q", "").strip()
-    
     purchases = process_search_purchase(query=query)
+    
+    paginator = Paginator(purchases, 10)
 
-    return render(request,
+    page_number = request.GET.get("page")
+
+    page_obj = paginator.get_page(page_number)
+
+    return render(
+        request,
         "inventory/purchase_management.html",
-        {"purchases": purchases,
-            "query": query,},)
+        {
+            "purchases": page_obj,
+            "page_obj": page_obj,
+            "query": query,
+        },
+    )
     
 @login_required(login_url="login")
 def purchase_detail(request, purchase_id):

@@ -14,6 +14,7 @@ from inventory.utils import process_search_products
 from decimal import Decimal
 from django.http import JsonResponse
 from accounts.models import Notification, User
+from django.core.paginator import Paginator
 
 def get_orders():
     return (SalesOrder.objects.select_related("employee").order_by("-created_at"))
@@ -519,39 +520,26 @@ def print_invoice(request, order_id):
 
 @login_required(login_url="login")
 def orders_list(request):
+
     query = request.GET.get("q", "").strip()
-    
-    # Lấy danh sách hóa đơn theo từ khóa
-    orders = process_search_order_list(keyword=query)
+    selected_status = request.GET.get("status", "").strip()
+
+    orders = process_search_order_list( keyword=query, status=selected_status)
+
+    paginator = Paginator(orders, 10)
+
+    page_number = request.GET.get("page")
+
+    page_obj = paginator.get_page(page_number)
 
     return render(
         request,
         "sales/orders_management.html",
         {
-            "orders": orders,
+            "orders": page_obj,
+            "page_obj": page_obj,
             "query": query,
-        },
+            "selected_status": selected_status,
+            "status_choices": SalesOrder.Status.choices,
+        }
     )
-
-    
-@login_required(login_url="login")
-def search_orders_list(request):
-    query = request.GET.get("q", "").strip()
-    
-    orders = process_search_order_list(keyword=query)
-
-    data = []
-    for order in orders:
-        employee_name = getattr(order.employee, 'full_name', '') or order.employee.get_full_name() or order.employee.username
-        data.append({
-            "id": order.id,
-            "order_code": order.order_code,
-            "employee_name": employee_name,
-            "created_at": order.created_at.strftime("%d/%m/%Y %H:%M"),
-            "final_amount": float(order.final_amount),
-            "status": order.status,
-            "status_display": order.get_status_display(),
-            "detail_url": f"/sales/orders/{order.id}/" if order.status != "draft" else f"/sales/?order={order.id}"
-        })
-
-    return JsonResponse({"success": True, "data": data})

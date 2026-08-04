@@ -9,61 +9,27 @@ class Product(models.Model):
         ACTIVE = "active", "Còn bán"
         INACTIVE = "inactive", "Ngừng kinh doanh"
 
-    name = models.CharField(
-        max_length=200,
-        unique=True,
-        verbose_name="Tên vải"
-    )
+    name = models.CharField(max_length=200,unique=True,verbose_name="Tên vải"    )
 
-    cost_price = models.DecimalField(
-        max_digits=12,
-        decimal_places=0,
-        default=0,
-        verbose_name="Giá vốn"
-    )
+    cost_price = models.DecimalField(max_digits=12,decimal_places=0,default=0, verbose_name="Giá vốn"    )
 
-    selling_price = models.DecimalField(
-        max_digits=12,
-        decimal_places=0,
-        default=0,
-        verbose_name="Giá bán"
-    )
+    selling_price = models.DecimalField(max_digits=12,decimal_places=0,default=0,verbose_name="Giá bán")
 
-    stock_quantity = models.DecimalField(
-        max_digits=10,
-        decimal_places=2,
-        default=Decimal("0.00"),
-        verbose_name="Tồn kho (mét)"
-    )
+    stock_quantity = models.DecimalField(max_digits=10,decimal_places=2,default=Decimal("0.00"),verbose_name="Tồn kho (mét)")
     
-    minimum_stock = models.DecimalField(
-        max_digits=10,
-        decimal_places=2,
-        default=10,
-        verbose_name="Tồn kho tối thiểu"
-    )
+    minimum_stock = models.DecimalField(max_digits=10,decimal_places=2,default=10,verbose_name="Tồn kho tối thiểu")
     
-    status = models.CharField(
-        max_length=20,
-        choices=Status.choices,
-        default=Status.ACTIVE,
-        verbose_name="Trạng thái"
-    )
+    status = models.CharField(max_length=20,choices=Status.choices,default=Status.ACTIVE, verbose_name="Trạng thái")
 
     created_at = models.DateTimeField(auto_now_add=True)
 
     updated_at = models.DateTimeField(auto_now=True)
     
-    profit_margin = models.DecimalField(
-        max_digits=5,
-        decimal_places=2,
-        default=Decimal("0.00"),
-        verbose_name="Tỷ lệ lợi nhuận (%)"
-    )
+    profit_margin = models.DecimalField(max_digits=5,decimal_places=2,default=Decimal("0.00"), verbose_name="Tỷ lệ lợi nhuận (%)")
 
     @property
     def fabric_code(self):
-        return f"VAI{self.pk:06d}" if self.pk else "VAIMỚI"
+        return f"VAI{self.pk:06d}" if self.pk else "VAI"
 
     def save(self, *args, **kwargs):
         old_cost_price = None
@@ -71,7 +37,6 @@ class Product(models.Model):
         if self.pk:
             old_cost_price = Product.objects.get(pk=self.pk).cost_price
 
-        # ĐÃ SỬA: Tính giá bán = giá vốn + (giá vốn * profit_margin / 100)
         if self.cost_price is not None and self.profit_margin is not None:
             margin_ratio = self.profit_margin / Decimal("100")
             self.selling_price = (self.cost_price * (Decimal("1.00") + margin_ratio)).quantize(
@@ -128,35 +93,16 @@ class ProductPriceHistory(models.Model):
 
 class PurchaseReceipt(models.Model):
 
-    employee = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.PROTECT,
-        related_name="purchase_receipts",
-        verbose_name="Người lập"
+    employee = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="purchase_receipts",verbose_name="Người lập"
     )
 
-    supplier_name = models.CharField(
-        max_length=200,
-        verbose_name="Tên nhà cung cấp"
-    )
+    supplier_name = models.CharField( max_length=200,verbose_name="Tên nhà cung cấp")
 
-    supplier_phone = models.CharField(
-        max_length=15,
-        blank=True,
-        verbose_name="SĐT nhà cung cấp"
-    )
+    supplier_phone = models.CharField(max_length=15,blank=True,verbose_name="SĐT nhà cung cấp")
 
-    total_amount = models.DecimalField(
-        max_digits=14,
-        decimal_places=0,
-        default=0,
-        verbose_name="Tổng tiền"
-    )
+    total_amount = models.DecimalField( max_digits=14, decimal_places=0,default=0,verbose_name="Tổng tiền")
 
-    created_at = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name="Ngày nhập"
-    )
+    created_at = models.DateTimeField( auto_now_add=True,verbose_name="Ngày nhập")
 
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -178,38 +124,16 @@ class PurchaseReceipt(models.Model):
     
 class PurchaseItem(models.Model):
 
-    receipt = models.ForeignKey(
-        PurchaseReceipt,
-        on_delete=models.CASCADE,
-        related_name="items",
-        verbose_name="Phiếu nhập"
+    receipt = models.ForeignKey( PurchaseReceipt,on_delete=models.CASCADE,related_name="items",verbose_name="Phiếu nhập"
     )
 
-    product = models.ForeignKey(
-        Product,
-        on_delete=models.PROTECT,
-        related_name="purchase_items",
-        verbose_name="Vải"
-    )
+    product = models.ForeignKey(Product,on_delete=models.PROTECT,related_name="purchase_items",verbose_name="Vải")
 
-    quantity = models.DecimalField(
-        max_digits=10,
-        decimal_places=2,
-        verbose_name="Số lượng (m)"
-    )
+    quantity = models.DecimalField( max_digits=10,decimal_places=2,verbose_name="Số lượng (m)")
 
-    unit_price = models.DecimalField(
-        max_digits=12,
-        decimal_places=0,
-        verbose_name="Giá nhập"
-    )
+    unit_price = models.DecimalField( max_digits=12,decimal_places=0,verbose_name="Giá nhập")
 
-    subtotal = models.DecimalField(
-        max_digits=14,
-        decimal_places=0,
-        editable=False,
-        verbose_name="Thành tiền"
-    )
+    subtotal = models.DecimalField(max_digits=14, decimal_places=0,editable=False, verbose_name="Thành tiền")
 
     class Meta:
         verbose_name = "Chi tiết phiếu nhập"

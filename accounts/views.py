@@ -103,9 +103,9 @@ def forgot_pwd(request):
 @login_required(login_url="login")
 def change_pwd(request):
     if request.method == "POST":
-        old_password = request.POST.get("old_password", "").strip()
-        new_password = request.POST.get("new_password", "").strip()
-        confirm_password = request.POST.get("confirm_password", "").strip()
+        old_password = request.POST.get("old_password", "")
+        new_password = request.POST.get("new_password", "")
+        confirm_password = request.POST.get("confirm_password", "")
 
         if not request.user.check_password(old_password):
             return JsonResponse({"success": False, "message": "Mật khẩu hiện tại không chính xác."})
@@ -113,17 +113,32 @@ def change_pwd(request):
         if new_password != confirm_password:
             return JsonResponse({"success": False, "message": "Mật khẩu xác nhận không khớp."})
 
+        if len(new_password) < 8:
+            return JsonResponse({"success": False, "message": "Mật khẩu mới phải có ít nhất 8 ký tự."})
+
+        if not re.search(r'[A-Z]', new_password):
+            return JsonResponse({"success": False, "message": "Mật khẩu mới phải chứa ít nhất 1 chữ cái hoa (A-Z)."})
+
+        if not re.search(r'[0-9]', new_password):
+            return JsonResponse({"success": False, "message": "Mật khẩu mới phải chứa ít nhất 1 chữ số (0-9)."})
+
+        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', new_password):
+            return JsonResponse({"success": False, "message": "Mật khẩu mới phải chứa ít nhất 1 ký tự đặc biệt."})
+
         request.user.set_password(new_password)
         request.user.save()
+
         update_session_auth_hash(request, request.user)
 
         return JsonResponse({"success": True, "message": "Đổi mật khẩu thành công!"})
 
     return JsonResponse({"success": False, "message": "Phương thức không hợp lệ."}, status=405)
 
+
 @login_required(login_url="login")
 def mark_notifications_read(request):
     if request.method == "POST":
+        from accounts.models import Notification
         Notification.objects.filter(receiver=request.user, is_read=False).update(is_read=True)
         return JsonResponse({"success": True})
     return JsonResponse({"success": False, "message": "Method not allowed"}, status=405)

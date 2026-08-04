@@ -1,56 +1,51 @@
 {% extends "base.html" %}
 {% load static %}
-{% load money%}
+{% load money %}
 
-{% block title %}
-Quản lý đơn hàng
-{% endblock %}
-
-{% block nav_order %}
-active
-{% endblock %}
+{% block title %}Quản lý đơn hàng{% endblock %}
+{% block nav_order %}active{% endblock %}
 
 {% block css %}
 <link rel="stylesheet" href="{% static 'css/orders_management.css' %}">
 <link rel="stylesheet" href="{% static 'css/layout.css' %}">
 <link rel="stylesheet" href="{% static 'css/base.css' %}">
-<link rel="stylesheet" href="{% static 'css/inventory.css' %}">
-
-
 {% endblock %}
 
 {% block content %}
-
 {% csrf_token %}
-<input
-    type="hidden"
-    id="csrf-token"
-    value="{{ csrf_token }}"
->
+<input type="hidden" id="csrf-token" value="{{ csrf_token }}">
 
 <div class="page-content">
-
     <div class="page-heading">
-
         <div>
             <h1>QUẢN LÝ ĐƠN HÀNG</h1>
         </div>
-        
     </div>
 
     <div class="search-header">
-        <form id="searchForm" class="search-form" method="get" onsubmit="return false;">
-            <label for="q" class="sr-only">Nhập mã hóa đơn hoặc tên người lập hóa đơn</label> <i class="fa-solid fa-magnifying-glass"></i>
-            
-            <input id="q" name="q" value="{{ query }}" placeholder="Nhập mã hóa đơn hoặc tên người lập hóa đơn" autocomplete="off">
+        <form id="searchForm" class="search-form" method="get">
+
+            <i class="fa-solid fa-magnifying-glass"></i>
+
+            <input type="text" id="q" name="q" value="{{ query }}"  placeholder="Nhập mã hóa đơn hoặc tên người lập" autocomplete="off">
+
+            <select id="statusFilter" name="status">
+                <option value="">Tất cả trạng thái</option>
+                    {% for value,label in status_choices %}
+                    <option value="{{ value }}"
+                        {% if selected_status == value %}selected{% endif %}>
+                        {{ label }}
+                    </option>
+                {% endfor %}
+            </select>
         </form>
-        
-            <div class="search-actions">
-                {% if query or selected_status %}
-                    <a href="{% url 'sales:orders_management' %}" class="clear-search">Xóa lọc</a>
-                {% endif %}
-                <a href="{% url 'sales:homepage' %}" class="btn-add"> Tạo đơn hàng mới </a>
-            </div>
+       
+        <div class="search-actions">
+            {% if query or selected_status %}
+                <a href="{% url 'sales:orders_management' %}" class="clear-search">Xóa lọc</a>
+            {% endif %}
+            <a href="{% url 'sales:homepage' %}" class="btn-add">Tạo đơn hàng mới</a>
+        </div>
     </div>
 
     <section class="table-card">
@@ -59,10 +54,10 @@ active
                 <tr>
                     <th width="18%">Mã hóa đơn</th>
                     <th width="18%">Người bán</th>
-                    <th width="18%%">Thời gian</th>
+                    <th width="18%">Thời gian</th>
                     <th width="20%">Tổng tiền</th>
-                    <th width="18%"> Trạng thái</th>
-                    <th width= "12%"> Chi tiết</th>
+                    <th width="18%" style="text-align: center;">Trạng thái</th>
+                    <th width="12%" style="text-align: center;">Chi tiết</th>
                 </tr>
             </thead>
             <tbody id="order-list-body">
@@ -72,21 +67,19 @@ active
                         data-status="{{ order.status }}"
                         onclick="window.location='{% if order.status == 'draft' %}/sales/?order={{ order.id }}{% else %}/sales/orders/{{ order.id }}/{% endif %}'"
                         style="cursor: pointer;">
-                        
+                       
                         <td><strong>{{ order.order_code }}</strong></td>
                         <td>{{ order.employee.full_name|default:order.employee.username }}</td>
                         <td>{{ order.created_at|date:"d/m/Y H:i" }}</td>
                         <td class="total-money" style="color: #dc3545; font-weight: bold;">
                             {{ order.final_amount|money }}
                         </td>
-                        <td>
+                        <td style="text-align: center;">
                             <span class="status {{ order.status }}">
                                 {{ order.get_status_display }}
                             </span>
                         </td>
-                        
-                        <td><i class="fa-solid fa-eye"></i></td>
-
+                        <td style="text-align: center;"><i class="fa-solid fa-eye"></i></td>
                     </tr>
                 {% empty %}
                     <tr>
@@ -97,75 +90,32 @@ active
                 {% endfor %}
             </tbody>
         </table>
+
+        <!-- THANH PHÂN TRANG -->
+        <div class="pagination">
+            {% if page_obj.has_previous %}
+                <a href="?page=1&q={{ query }}&status={{ selected_status }}">«</a>
+                <a href="?page={{ page_obj.previous_page_number }}&q={{ query }}&status={{ selected_status }}">‹</a>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                    <span class="current">{{ num }}</span>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <a href="?page={{ num }}&q={{ query }}&status={{ selected_status }}">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}&q={{ query }}&status={{ selected_status }}">›</a>
+                <a href="?page={{ page_obj.paginator.num_pages }}&q={{ query }}&status={{ selected_status }}">»</a>
+            {% endif %}
+        </div>
     </section>
 </div>
-
-<div
-    id="delete-order-modal"
-    class="modal">
-    <div class="modal-content delete-confirmation-modal">
-
-        <div class="modal-header">
-
-            <h2>
-                Xóa hóa đơn
-            </h2>
-
-            <span
-                class="close"
-                onclick="closeDeleteModal()"
-            >
-                &times;
-            </span>
-
-        </div>
-
-        <div class="modal-body">
-
-            <div class="delete-message">
-
-                <p>
-
-                    Bạn có chắc chắn muốn xóa hóa đơn
-
-                    <strong id="delete-order-code"></strong>
-
-                    không?
-
-                </p>
-
-            </div>
-
-        </div>
-
-        <div class="modal-footer">
-
-            <button
-                class="btn-secondary"
-                onclick="closeDeleteModal()"
-            >
-                Hủy
-            </button>
-
-            <button
-                class="btn-danger"
-                onclick="confirmDeleteOrder()"
-            >
-                Đồng ý
-            </button>
-
-        </div>
-
-    </div>
-
-</div>
-
 {% endblock %}
 
 {% block js %}
-
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
 <script src="{% static 'js/orders_management.js' %}"></script>
-
 {% endblock %}

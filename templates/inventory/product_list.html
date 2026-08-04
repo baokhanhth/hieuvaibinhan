@@ -8,6 +8,8 @@
 
 {% block css %} 
 <link rel="stylesheet" href="{% static 'css/inventory.css' %}"> 
+<link rel="stylesheet" href="{% static 'css/layout.css' %}"> 
+
 {% endblock %} 
 
 {% block content %} 
@@ -102,6 +104,25 @@
             </tbody> 
         </table> 
     </section> 
+    <div class="pagination">
+        {% if page_obj.has_previous %}
+            <a href="?page=1&q={{ query }}&status={{ selected_status }}&sort={{ stock_sort }}">«</a>
+            <a href="?page={{ page_obj.previous_page_number }}&q={{ query }}&status={{ selected_status }}&sort={{ stock_sort }}">‹</a>
+        {% endif %}
+        {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+                <span class="current">{{ num }}</span>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <a href="?page={{ num }}&q={{ query }}&status={{ selected_status }}&sort={{ stock_sort }}">
+                    {{ num }}
+                </a>
+            {% endif %}
+        {% endfor %}
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}&q={{ query }}&status={{ selected_status }}&sort={{ stock_sort }}">›</a>
+            <a href="?page={{ page_obj.paginator.num_pages }}&q={{ query }}&status={{ selected_status }}&sort={{ stock_sort }}">»</a>
+        {% endif %}
+    </div>
 </div> 
 {% endblock %} 
 

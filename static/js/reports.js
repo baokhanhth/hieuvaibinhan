@@ -49,7 +49,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // 4. Hàm gọi API lấy dữ liệu báo cáo
     async function fetchReportData(filterType, fromDate = "", toDate = "") {
         let url = `data/?filter=${filterType}`;
         if (filterType === "custom") {

@@ -9,41 +9,22 @@ class SalesOrder(models.Model):
         COMPLETED = "completed", "Đã thanh toán"
         CANCELLED = "cancelled", "Đã hủy"
 
-    employee = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.PROTECT,
-        related_name="sales_orders",
-        verbose_name="Nhân viên"
-    )
+    employee = models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.PROTECT,related_name="sales_orders",verbose_name="Nhân viên")
 
-    discount = models.DecimalField( max_digits=12,
-                                    decimal_places=0,
-                                    default=0,
-                                    verbose_name="Giảm giá")
+    discount = models.DecimalField( max_digits=12,decimal_places=0,default=0,verbose_name="Giảm giá")
+                                    
+                                    
 
-    total_amount = models.DecimalField( max_digits=12,
-                                        decimal_places=0,
-                                        default=0,
-                                        verbose_name="Tổng tiền")
+    total_amount = models.DecimalField( max_digits=12,decimal_places=0,default=0,verbose_name="Tổng tiền")
+                                                 
+    final_amount = models.DecimalField( max_digits=12,decimal_places=0,default=0,verbose_name="Thành tiền")
 
-    final_amount = models.DecimalField( max_digits=12,
-                                        decimal_places=0,
-                                        default=0,
-                                        verbose_name="Thành tiền")
-
-    status = models.CharField(  max_length=20,
-                                choices=Status.choices,
-                                default=Status.DRAFT,
-                                db_index=True,
-                                verbose_name="Trạng thái")
+    status = models.CharField(  max_length=20,choices=Status.choices,default=Status.DRAFT,db_index=True,verbose_name="Trạng thái")
 
     created_at = models.DateTimeField( auto_now_add=True, verbose_name="Ngày lập")
 
     completed_at = models.DateTimeField(null=True, blank=True, verbose_name="Ngày thanh toán")
-    updated_at = models.DateTimeField(
-        auto_now=True,
-        verbose_name="Ngày cập nhật"
-    )
+    updated_at = models.DateTimeField( auto_now=True,verbose_name="Ngày cập nhật")
 
     class Meta:
         ordering = ["-created_at"]
@@ -59,38 +40,14 @@ class SalesOrder(models.Model):
 
 
 class SalesOrderItem(models.Model):
-    order = models.ForeignKey(
-        SalesOrder,
-        on_delete=models.CASCADE,
-        related_name="items",
-        verbose_name="Hóa đơn"
-    )
+    order = models.ForeignKey( SalesOrder, on_delete=models.CASCADE, related_name="items",verbose_name="Hóa đơn")
 
-    product = models.ForeignKey(
-        Product,
-        on_delete=models.PROTECT,
-        related_name="sales_items",
-        verbose_name="Sản phẩm"
-    )
+    product = models.ForeignKey(Product, on_delete=models.PROTECT,related_name="sales_items",verbose_name="Sản phẩm")
 
-    quantity = models.DecimalField(
-        max_digits=10,
-        decimal_places=2,
-        verbose_name="Số lượng (mét)"
-    )
+    quantity = models.DecimalField(max_digits=10, decimal_places=2,verbose_name="Số lượng (mét)")
 
-    unit_price = models.DecimalField(
-        max_digits=12,
-        decimal_places=0,
-        verbose_name="Đơn giá"
-    )
-
-    subtotal = models.DecimalField(
-        max_digits=12,
-        decimal_places=0,
-        editable=False,
-        verbose_name="Thành tiền"
-    )
+    unit_price = models.DecimalField( max_digits=12, decimal_places=0,verbose_name="Đơn giá")
+    subtotal = models.DecimalField(max_digits=12,decimal_places=0,editable=False,verbose_name="Thành tiền")
 
     class Meta:
         ordering = ["id"]
