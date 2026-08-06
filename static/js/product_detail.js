@@ -46,7 +46,7 @@ document.addEventListener("DOMContentLoaded", () => {
     function saveOriginalData() {
         originalData.name = nameInput.value;
         originalData.costPrice = costPriceInput.value;
-        originalData.profitMargin = profitMarginInput.value; // Lưu dữ liệu gốc % LN
+        originalData.profitMargin = profitMarginInput.value; 
         originalData.stock = stockInput.value;
         originalData.minimumStock = minimumStockInput.value;
         originalData.status = statusInput.value;
@@ -56,7 +56,7 @@ document.addEventListener("DOMContentLoaded", () => {
     function restoreOriginalData() {
         nameInput.value = originalData.name;
         costPriceInput.value = originalData.costPrice;
-        profitMarginInput.value = originalData.profitMargin; // Phục hồi dữ liệu gốc % LN
+        profitMarginInput.value = originalData.profitMargin; 
         stockInput.value = originalData.stock;
         minimumStockInput.value = originalData.minimumStock;
         statusInput.value = originalData.status;
@@ -67,7 +67,7 @@ document.addEventListener("DOMContentLoaded", () => {
     {   
         nameInput.readOnly = !enable;
         costPriceInput.readOnly = !enable;
-        profitMarginInput.readOnly = !enable; // Khóa/mở khóa % LN
+        profitMarginInput.readOnly = true;
         stockInput.disabled = !enable;
         minimumStockInput.readOnly = true;
         statusInput.disabled = !enable;
@@ -83,15 +83,12 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // Thiết lập trạng thái ban đầu
     saveOriginalData();
     enableEdit(false);
 
-    // Bắt sự kiện Chỉnh sửa / Hủy
     btnEdit.addEventListener("click", () => { enableEdit(true); });
     btnCancel.addEventListener("click", () => { restoreOriginalData(); enableEdit(false); });
 
-    // Tự động tính giá bán: Giá bán = Giá vốn + (Giá vốn * % Lợi nhuận / 100)
     function calculateSellingPrice() {
         const cost = parseFloat(costPriceInput.value) || 0;
         const margin = parseFloat(profitMarginInput.value) || 0;
@@ -108,7 +105,6 @@ document.addEventListener("DOMContentLoaded", () => {
     costPriceInput.addEventListener("input", calculateSellingPrice);
     profitMarginInput.addEventListener("input", calculateSellingPrice);
 
-    // Cập nhật lên máy chủ (Lưu chỉnh sửa)
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
             
@@ -175,7 +171,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Xóa (đánh dấu Ngừng kinh doanh)
     const btnDelete = document.querySelector('.btn-delete');
     if (btnDelete) {
         btnDelete.addEventListener('click', async () => {

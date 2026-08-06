@@ -58,10 +58,11 @@ async function deleteOrder(orderId) {
             title: "Thành công",
             text: data.message,
             timer: 1500,
-            showConfirmButton: false
+            showConfirmButton: false,
+            showCloseButton: true
         });
 
-        window.location.href = "/sales/orders/manager/";
+        window.location.href = "/sales/orders/list/";
 
     }
     catch (error) {

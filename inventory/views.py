@@ -126,11 +126,10 @@ def product_create(request):
         next_id = (last_product.pk + 1) if last_product else 1
         next_fabric_code = f"VAI{next_id:06d}"
 
-        # 2. Thiết lập các giá trị mặc định cho Form
         form = ProductForm(initial={
-            "profit_margin": 30,      # Mặc định % Lợi nhuận là 30%
-            "minimum_stock": 10,      # Mặc định tồn kho tối thiểu là 10m
-            "status": "active",       # Mặc định trạng thái là Còn bán
+            "profit_margin": 30,      
+            "minimum_stock": 5,      
+            "status": "active",      
         })
 
         return render(request, "inventory/product_create.html", {
@@ -154,9 +153,9 @@ def product_create(request):
                 })
 
             cost_price = Decimal(str(data.get("cost_price", 0)))
-            profit_margin = Decimal(str(data.get("profit_margin", 30)))  # Mặc định 30 nếu không gửi
+            profit_margin = Decimal("30")
             stock_quantity = Decimal(str(data.get("stock_quantity", 0)))
-            minimum_stock = Decimal(str(data.get("minimum_stock", 10)))   # Mặc định 10 nếu không gửi
+            minimum_stock = Decimal("5") 
 
             if cost_price <= 0:
                 return JsonResponse({"success": False, "message": "Giá vốn phải lớn hơn 0!"})
@@ -291,7 +290,7 @@ def purchase_create(request):
 
                 else:
                     product = Product.objects.create(name=item["name"],cost_price=unit_price,
-                        profit_margin=30, stock_quantity=0, minimum_stock=10, status="active",)
+                        profit_margin=30, stock_quantity=0, minimum_stock=5, status="active",)
 
                 product.stock_quantity += quantity
                 product.save()

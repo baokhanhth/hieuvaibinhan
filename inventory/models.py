@@ -17,7 +17,7 @@ class Product(models.Model):
 
     stock_quantity = models.DecimalField(max_digits=10,decimal_places=2,default=Decimal("0.00"),verbose_name="Tồn kho (mét)")
     
-    minimum_stock = models.DecimalField(max_digits=10,decimal_places=2,default=10,verbose_name="Tồn kho tối thiểu")
+    minimum_stock = models.DecimalField(max_digits=10,decimal_places=2,default=5,verbose_name="Tồn kho tối thiểu")
     
     status = models.CharField(max_length=20,choices=Status.choices,default=Status.ACTIVE, verbose_name="Trạng thái")
 

@@ -30,31 +30,27 @@ class ProductForm(forms.ModelForm):
             }),
             "cost_price": forms.NumberInput(attrs={
                 "class": "form-control",
-                "min": "1",  # Đã sửa thành min = 1 (phải lớn hơn 0)
+                "min": "1",  
                 "autocomplete": "off",
                 "id": "id_cost_price",
             }),
-            "profit_margin": forms.NumberInput(attrs={
-                "class": "form-control",
-                "min": "0",  # Lợi nhuận có thể = 0%
-                "step": "0.1",
-                "autocomplete": "off",
-                "id": "id_profit_margin",
-            }),
+            "profit_margin": forms.NumberInput(attrs={"class": "form-control",
+                                                "id": "id_profit_margin",
+                                                "readonly": True,
+            }
+        ),
             "stock_quantity": forms.NumberInput(attrs={
                 "class": "form-control",
                 "step": "0.01",
-                "min": "0.01",  # Tồn kho phải > 0
+                "min": "0.01",  
                 "autocomplete": "off",
                 "id": "id_stock_quantity",
             }),
-            "minimum_stock": forms.NumberInput(attrs={
-                "class": "form-control",
-                "step": "0.01",
-                "min": "0.01",  # Tồn kho tối thiểu phải > 0
-                "autocomplete": "off",
-                "id": "id_minimum_stock",
-            }),
+            "minimum_stock": forms.NumberInput(attrs={ "class": "form-control",
+                                                        "id": "id_minimum_stock",
+                                                        "readonly": True,
+                                                    }
+                                                ),
             "status": forms.Select(attrs={
                 "class": "form-select",
                 "autocomplete": "off",

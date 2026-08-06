@@ -11,7 +11,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const costPrice = parseFloat(document.getElementById("id_cost_price").value);
         const profitMargin = parseFloat(document.getElementById("id_profit_margin")?.value || 0);
         const stockQuantity = parseFloat(document.getElementById("id_stock_quantity").value);
-        const minimumStock = parseFloat(document.getElementById("id_minimum_stock").value);
+        const minimumStock = 5;
         const status = document.getElementById("id_status").value;
 
         if (!name) {
@@ -53,17 +53,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 icon: "warning",
                 title: "Cảnh báo",
                 text: "Tồn kho ban đầu phải lớn hơn 0!",
-                showCloseButton: true,
-                confirmButtonText: "Đóng"
-            });
-            return;
-        }
-
-        if (isNaN(minimumStock) || minimumStock <= 0) {
-            Swal.fire({
-                icon: "warning",
-                title: "Cảnh báo",
-                text: "Tồn kho tối thiểu phải lớn hơn 0!",
                 showCloseButton: true,
                 confirmButtonText: "Đóng"
             });
