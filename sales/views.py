@@ -36,16 +36,18 @@ def get_or_create_draft_order(employee):
 
     return process_create_order(employee)
 
+@login_required(login_url="login")
 def product_search_sale(request):
     if request.method != "GET":
         return error_response("Method not allowed.", status=405)
 
     keyword = request.GET.get("q", "").strip()
-    products = process_search_products(keyword=keyword, status=Product.Status.ACTIVE)
+    products = process_search_products(keyword=keyword, status="active")
 
-    data = [{   "id": p.id,
-                "name": p.name,
-                "selling_price": float(p.selling_price),
+    data = [{
+        "id": p.id,
+        "name": p.name,
+        "selling_price": float(p.selling_price),  
     } for p in products]
 
     return success_response(data=data)
@@ -322,6 +324,7 @@ def order_data(request, order_id):
         "order_code": order.order_code,
         "status": order.status,
         "discount": float(order.discount),
+        "note": order.note or "",  # 👈 Trả về ghi chú đã lưu
         "total_amount": float(order.total_amount),
         "final_amount": float(order.final_amount),
         "items": []
@@ -463,7 +466,19 @@ def checkout_order(request, order_id):
         return error_response("Method not allowed.", status=405)
 
     try:
+        body = {}
+        if request.body:
+            try:
+                body = json.loads(request.body.decode('utf-8'))
+            except Exception:
+                pass
+        
+        note = body.get("note", "").strip()
+
         order = get_object_or_404(SalesOrder, pk=order_id, employee=request.user)
+
+        order.note = note
+        order.save(update_fields=["note", "updated_at"])
 
         order, low_stock_products = process_checkout(order)
         new_order = get_or_create_draft_order(request.user)

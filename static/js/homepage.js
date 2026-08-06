@@ -116,15 +116,10 @@ async function searchProducts(keyword) {
         );
         const result = await response.json();
 
-        let data = [];
-        if (Array.isArray(result)) {
-            data = result;
-        } else if (result && result.success && Array.isArray(result.data)) {
-            data = result.data;
-        } else {
+        if (!result.success) {
             return;
         }
-        currentProducts = data;
+        currentProducts = result.data;
         renderSearchResult(currentProducts);
     } catch (error) {
         console.error(error);
@@ -236,8 +231,12 @@ async function loadOrder(orderId) {
     discount = order.discount || 0;
 
     discountInput.value = discount ? formatMoney(discount) : "";
+    
+    if (noteInput) {
+        noteInput.value = order.note || "";
+    }
+    
     orderStatus.textContent = order.status === "draft" ? "Chờ thanh toán" : "Đã thanh toán";
-
     renderTable();
 }
 
@@ -408,7 +407,6 @@ function clearInvoice() {
     updateCheckoutButton();
 }
 
-// Bắt sự kiện Giảm giá: Giới hạn nhỏ hơn hoặc bằng Tổng tiền hàng
 attachMoneyInput(discountInput, function (value) {
     let subtotal = 0;
     orderItems.forEach(item => { subtotal += item.subtotal; });
@@ -430,7 +428,6 @@ attachMoneyInput(discountInput, function (value) {
     calculateInvoice();
 });
 
-// Bắt sự kiện Khách thanh toán
 attachMoneyInput(paidInput, function (value) {
     paid = value;
     calculateChange();
@@ -474,6 +471,9 @@ async function checkout() {
         const response = await fetch(`/sales/orders/${currentOrderId}/checkout/`, {
             method: "POST",
             headers: getHeaders(),
+            body: JSON.stringify({
+                note: noteInput.value.trim()
+            })
         });
 
         const result = await response.json();

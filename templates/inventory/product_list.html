@@ -9,7 +9,6 @@
 {% block css %} 
 <link rel="stylesheet" href="{% static 'css/inventory.css' %}"> 
 <link rel="stylesheet" href="{% static 'css/layout.css' %}"> 
-
 {% endblock %} 
 
 {% block content %} 
@@ -77,7 +76,7 @@
             </thead> 
             <tbody id="product-table-body"> 
                 {% for product in products %} 
-                    <tr class="{% if product.stock_quantity <= product.minimum_stock %}low-stock{% endif %}" {% if user.is_owner %} onclick="window.location='{% url 'inventory:product_detail' product.id %}'" style="cursor:pointer;" {% endif %}> 
+                    <tr class="{% if product.status == 'active' and product.stock_quantity <= product.minimum_stock %}low-stock{% endif %}" {% if user.is_owner %} onclick="window.location='{% url 'inventory:product_detail' product.id %}'" style="cursor:pointer;" {% endif %}> 
                         <td>{{ product.fabric_code }}</td> 
                         <td>{{ product.name }}</td> 
                         {% if user.is_owner %} 
@@ -86,7 +85,7 @@
                         <td>{{ product.selling_price|money }}</td> 
                         <td> 
                             {{ product.stock_quantity|floatformat:2 }} 
-                            {% if product.stock_quantity <= product.minimum_stock %}
+                            {% if product.status == 'active' and product.stock_quantity <= product.minimum_stock %}
                                 <span class="warning"><i class="fa-solid fa-triangle-exclamation"></i> Cảnh báo</span>
                             {% endif %} 
                         </td> 

@@ -25,6 +25,7 @@ class SalesOrder(models.Model):
 
     completed_at = models.DateTimeField(null=True, blank=True, verbose_name="Ngày thanh toán")
     updated_at = models.DateTimeField( auto_now=True,verbose_name="Ngày cập nhật")
+    note = models.TextField(blank=True, default="", verbose_name="Ghi chú")
 
     class Meta:
         ordering = ["-created_at"]

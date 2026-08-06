@@ -78,7 +78,6 @@ def process_reports_data(filter_type="30days", from_date_str=None, to_date_str=N
             if start_date > end_date:
                 start_date, end_date = end_date.replace(hour=0, minute=0, second=0, microsecond=0), start_date.replace(hour=23, minute=59, second=59)
 
-            # Đảm bảo end_date không vượt quá thời điểm hiện tại
             if end_date > now:
                 end_date = now
 

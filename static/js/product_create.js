@@ -25,7 +25,6 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        // Kiểm tra thống nhất Giá vốn phải > 0
         if (isNaN(costPrice) || costPrice <= 0) {
             Swal.fire({
                 icon: "warning",

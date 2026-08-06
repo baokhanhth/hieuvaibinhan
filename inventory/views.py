@@ -59,14 +59,12 @@ def product_list(request):
 
     if stock_sort in {"stock_asc", "stock_desc"}:
         stock_order = "-stock_quantity" if stock_sort == "stock_desc" else "stock_quantity"
-        products = products.order_by("low_stock_order", stock_order, "pk")
+        products = products.order_by("low_stock_order", stock_order, "name", "pk")
     else:
-        products = products.order_by("low_stock_order", "name","pk")
+        products = products.order_by("low_stock_order", "name", "pk")
         
     paginator = Paginator(products, 10)
-
     page_number = request.GET.get("page")
-
     page_obj = paginator.get_page(page_number)
 
     next_stock_sort = "stock_desc" if stock_sort == "stock_asc" else "stock_asc"

@@ -20,29 +20,27 @@ def error_response(message="Có lỗi xảy ra.", status=400):
         },
         status=status,
     )
+    
 def process_search_products(keyword="", status=""):
     products = Product.objects.annotate(
         low_stock_order=Case(
-            When(stock_quantity__lte=F("minimum_stock"), then=Value(0)),
+            When(
+                status=Product.Status.ACTIVE,
+                stock_quantity__lte=F("minimum_stock"),
+                then=Value(0)
+            ),
             default=Value(1),
             output_field=IntegerField(),
         )
     )
 
-    keyword = keyword.strip() if keyword else ""
     if keyword:
-        filters = Q(name__icontains=keyword) | Q(id__icontains=keyword)
-        
-        code_value = keyword.upper().removeprefix("VAI-").removeprefix("VAI")
-        if code_value.isdigit():
-            filters |= Q(pk=int(code_value))
-            
-        products = products.filter(filters)
+        products = products.filter(
+            Q(name__icontains=keyword) | Q(fabric_code__icontains=keyword)
+        )
 
     if status:
-        valid_statuses = {choice[0] for choice in Product.Status.choices}
-        if status in valid_statuses:
-            products = products.filter(status=status)
+        products = products.filter(status=status)
 
     return products
 

@@ -1,29 +1,22 @@
 document.addEventListener("DOMContentLoaded", () => {
-
     const form = document.getElementById("searchForm");
-
     const searchInput = document.getElementById("q");
-
-    const status = document.getElementById("status");
+    const statusSelect = document.getElementById("status");
 
     let timer;
 
-    searchInput.addEventListener("input", () => {
+    if (searchInput) {
+        searchInput.addEventListener("input", () => {
+            clearTimeout(timer);
+            timer = setTimeout(() => {
+                form.submit();
+            }, 300);
+        });
+    }
 
-        clearTimeout(timer);
-
-        timer = setTimeout(() => {
-
+    if (statusSelect) {
+        statusSelect.addEventListener("change", () => {
             form.submit();
-
-        },300);
-
-    });
-
-    status.addEventListener("change", () => {
-
-        form.submit();
-
-    });
-
+        });
+    }
 });
