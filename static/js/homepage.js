@@ -116,10 +116,15 @@ async function searchProducts(keyword) {
         );
         const result = await response.json();
 
-        if (!result.success) {
+        let data = [];
+        if (Array.isArray(result)) {
+            data = result;
+        } else if (result && result.success && Array.isArray(result.data)) {
+            data = result.data;
+        } else {
             return;
         }
-        currentProducts = result.data;
+        currentProducts = data;
         renderSearchResult(currentProducts);
     } catch (error) {
         console.error(error);

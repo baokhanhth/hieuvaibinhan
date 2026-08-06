@@ -30,7 +30,7 @@ def product_search(request):
     status = request.GET.get("status", "").strip()
 
     products = process_search_products(keyword=keyword, status=status)
-    products = products.order_by("low_stock_order", "pk")
+    products = products.order_by("low_stock_order", "name", "pk")
 
     data = []
     for product in products:
@@ -61,7 +61,7 @@ def product_list(request):
         stock_order = "-stock_quantity" if stock_sort == "stock_desc" else "stock_quantity"
         products = products.order_by("low_stock_order", stock_order, "pk")
     else:
-        products = products.order_by("low_stock_order", "pk")
+        products = products.order_by("low_stock_order", "name","pk")
         
     paginator = Paginator(products, 10)
 

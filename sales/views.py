@@ -41,7 +41,7 @@ def product_search_sale(request):
         return error_response("Method not allowed.", status=405)
 
     keyword = request.GET.get("q", "").strip()
-    products = process_search_products(keyword)
+    products = process_search_products(keyword=keyword, status=Product.Status.ACTIVE)
 
     data = [{   "id": p.id,
                 "name": p.name,

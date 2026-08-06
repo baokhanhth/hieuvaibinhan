@@ -46,7 +46,7 @@ document.addEventListener("DOMContentLoaded", () => {
     function saveOriginalData() {
         originalData.name = nameInput.value;
         originalData.costPrice = costPriceInput.value;
-        originalData.profitMargin = profitMarginInput.value; 
+        originalData.profitMargin = profitMarginInput.value; // Lưu dữ liệu gốc % LN
         originalData.stock = stockInput.value;
         originalData.minimumStock = minimumStockInput.value;
         originalData.status = statusInput.value;
@@ -56,7 +56,7 @@ document.addEventListener("DOMContentLoaded", () => {
     function restoreOriginalData() {
         nameInput.value = originalData.name;
         costPriceInput.value = originalData.costPrice;
-        profitMarginInput.value = originalData.profitMargin; 
+        profitMarginInput.value = originalData.profitMargin; // Phục hồi dữ liệu gốc % LN
         stockInput.value = originalData.stock;
         minimumStockInput.value = originalData.minimumStock;
         statusInput.value = originalData.status;
@@ -68,8 +68,11 @@ document.addEventListener("DOMContentLoaded", () => {
         nameInput.readOnly = !enable;
         costPriceInput.readOnly = !enable;
         profitMarginInput.readOnly = true;
+        profitMarginInput.disabled = true;
         stockInput.disabled = !enable;
         minimumStockInput.readOnly = true;
+        minimumStockInput.disabled = true;
+        minimumStockInput.value = 5;
         statusInput.disabled = !enable;
 
         if (enable) {
@@ -83,12 +86,15 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+    // Thiết lập trạng thái ban đầu
     saveOriginalData();
     enableEdit(false);
 
+    // Bắt sự kiện Chỉnh sửa / Hủy
     btnEdit.addEventListener("click", () => { enableEdit(true); });
     btnCancel.addEventListener("click", () => { restoreOriginalData(); enableEdit(false); });
 
+    // Tự động tính giá bán: Giá bán = Giá vốn + (Giá vốn * % Lợi nhuận / 100)
     function calculateSellingPrice() {
         const cost = parseFloat(costPriceInput.value) || 0;
         const margin = parseFloat(profitMarginInput.value) || 0;
@@ -105,10 +111,22 @@ document.addEventListener("DOMContentLoaded", () => {
     costPriceInput.addEventListener("input", calculateSellingPrice);
     profitMarginInput.addEventListener("input", calculateSellingPrice);
 
+    // Cập nhật lên máy chủ (Lưu chỉnh sửa)
+    function getCompleteFormData() {
+        const formData = new FormData(form);
+        if (!formData.has('name') && nameInput) formData.set('name', nameInput.value);
+        if (!formData.has('cost_price') && costPriceInput) formData.set('cost_price', costPriceInput.value);
+        if (!formData.has('profit_margin') && profitMarginInput) formData.set('profit_margin', profitMarginInput.value || '30');
+        if (!formData.has('stock_quantity') && stockInput) formData.set('stock_quantity', stockInput.value);
+        if (!formData.has('minimum_stock') && minimumStockInput) formData.set('minimum_stock', '5');
+        if (!formData.has('status') && statusInput) formData.set('status', statusInput.value || 'active');
+        return formData;
+    }
+
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
             
-        const formData = new FormData(form);
+        const formData = getCompleteFormData();
         try {
             const url = form.action || window.location.href;
             const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]').value;
@@ -171,6 +189,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    // Xóa (đánh dấu Ngừng kinh doanh)
     const btnDelete = document.querySelector('.btn-delete');
     if (btnDelete) {
         btnDelete.addEventListener('click', async () => {
@@ -188,7 +207,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!result.isConfirmed) return;
 
             const url = form.action || window.location.href;
-            const formData = new FormData(form);
+            const formData = getCompleteFormData();
             formData.set('status', 'inactive');
 
             try {
