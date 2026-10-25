@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 import os
+import dj_database_url
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -80,11 +81,14 @@ WSGI_APPLICATION = 'fabric_store.wsgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(
+        # 'ENGINE': 'django.db.backends.sqlite3',
+        # 'NAME': BASE_DIR / 'db.sqlite3',
+        default='postgresql://neondb_owner:npg_AdzqE5pC3UKw@ep-rough-sunset-b7cwmrni-pooler.c-13.us-east-1.aws.neon.tech/neondb?channel_binding=require&sslmode=require',
+        conn_max_age=600,
+        conn_health_checks=True,)
 }
+
 
 
 # Password validation
