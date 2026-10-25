@@ -1,7 +1,7 @@
 # Hệ thống Quản lý Bán hàng và Kho hàng - Hiệu Vải Bình An
 
 🔗 **Live Demo:** https://hieuvaibinhan.vercel.app/
-
+* Tài liệu dự án: https://drive.google.com/drive/folders/1IvGRh7tgE5K-6B5O51kImvvECDeKeQWM?usp=sharing
 ## 📖 Giới thiệu dự án
 
 ### 🚨 Bối cảnh & Vấn đề (As-Is)
